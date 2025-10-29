@@ -1,28 +1,28 @@
-import { IsString, IsNotEmpty, IsOptional, IsEmail } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsString, IsNotEmpty, IsOptional, IsEmail } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
 
 export class CreateStoreDto {
-  @ApiProperty({ example: 'Mi Tienda' })
+  @ApiProperty({ example: "Mi Tienda" })
   @IsString()
   @IsNotEmpty()
   name: string;
 
-  @ApiProperty({ example: 'Descripción de la tienda', required: false })
+  @ApiProperty({ example: "Descripción de la tienda", required: false })
   @IsString()
   @IsOptional()
   description?: string;
 
-  @ApiProperty({ example: '123 Main St' })
+  @ApiProperty({ example: "123 Main St" })
   @IsString()
   @IsNotEmpty()
   address: string;
 
-  @ApiProperty({ example: '+1234567890', required: false })
+  @ApiProperty({ example: "+1234567890", required: false })
   @IsString()
   @IsOptional()
   phone?: string;
 
-  @ApiProperty({ example: 'store@example.com', required: false })
+  @ApiProperty({ example: "store@example.com", required: false })
   @IsEmail()
   @IsOptional()
   email?: string;
@@ -31,4 +31,13 @@ export class CreateStoreDto {
   @IsString()
   @IsOptional()
   logo?: string;
+
+  @ApiProperty({
+    example: "COP",
+    description: "Código de moneda (COP por defecto)",
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  currency?: string;
 }

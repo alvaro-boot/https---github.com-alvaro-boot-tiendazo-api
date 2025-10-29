@@ -896,7 +896,8 @@ curl -X POST https://https-github-com-alvaro-boot-tiendazo-api.onrender.com/api/
   -d '{
     "name": "Mi Tienda",
     "address": "Calle 123",
-    "phone": "+1234567890"
+    "phone": "+1234567890",
+    "currency": "COP"
   }'
 
 # Listar tiendas

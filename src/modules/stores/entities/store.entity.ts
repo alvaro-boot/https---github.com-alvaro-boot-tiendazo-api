@@ -1,10 +1,10 @@
-import { Entity, Column, OneToMany } from 'typeorm';
-import { BaseEntity } from '../../shared/base.entity';
-import { User } from '../../auth/entities/user.entity';
-import { Product } from '../../products/entities/product.entity';
-import { Sale } from '../../sales/entities/sale.entity';
+import { Entity, Column, OneToMany } from "typeorm";
+import { BaseEntity } from "../../shared/base.entity";
+import { User } from "../../auth/entities/user.entity";
+import { Product } from "../../products/entities/product.entity";
+import { Sale } from "../../sales/entities/sale.entity";
 
-@Entity('stores')
+@Entity("stores")
 export class Store extends BaseEntity {
   @Column()
   name: string;
@@ -27,8 +27,11 @@ export class Store extends BaseEntity {
   @Column({ default: true })
   isActive: boolean;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @Column({ type: "decimal", precision: 10, scale: 2, default: 0 })
   balance: number;
+
+  @Column({ default: "COP" })
+  currency: string;
 
   // Relations
   @OneToMany(() => User, (user) => user.store)
