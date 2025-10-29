@@ -9,6 +9,8 @@ import {
 import { BaseEntity } from '../../shared/base.entity';
 import { Store } from '../../stores/entities/store.entity';
 import { Sale } from '../../sales/entities/sale.entity';
+import { InventoryMovement } from '../../inventory/entities/inventory-movement.entity';
+import { DebtPayment } from '../../debts/entities/debt-payment.entity';
 import { Exclude } from 'class-transformer';
 
 export enum UserRole {
@@ -53,4 +55,10 @@ export class User extends BaseEntity {
 
   @OneToMany(() => Sale, (sale) => sale.user)
   sales: Sale[];
+
+  @OneToMany(() => InventoryMovement, (movement) => movement.user)
+  inventoryMovements: InventoryMovement[];
+
+  @OneToMany(() => DebtPayment, (payment) => payment.user)
+  debtPayments: DebtPayment[];
 }

@@ -1,8 +1,8 @@
-import { Entity, Column, OneToMany } from 'typeorm';
-import { BaseEntity } from '../../shared/base.entity';
-import { Product } from './product.entity';
+import { Entity, Column, OneToMany } from "typeorm";
+import { BaseEntity } from "../../shared/base.entity";
+import { Product } from "../../products/entities/product.entity";
 
-@Entity('categories')
+@Entity("categories")
 export class Category extends BaseEntity {
   @Column({ unique: true })
   name: string;

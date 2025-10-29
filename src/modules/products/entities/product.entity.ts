@@ -1,16 +1,11 @@
-import {
-  Entity,
-  Column,
-  ManyToOne,
-  JoinColumn,
-  OneToMany,
-} from 'typeorm';
-import { BaseEntity } from '../../shared/base.entity';
-import { Category } from './category.entity';
-import { Store } from '../../stores/entities/store.entity';
-import { SaleDetail } from '../../sales/entities/sale-detail.entity';
+import { Entity, Column, ManyToOne, JoinColumn, OneToMany } from "typeorm";
+import { BaseEntity } from "../../shared/base.entity";
+import { Category } from "../../categories/entities/category.entity";
+import { Store } from "../../stores/entities/store.entity";
+import { SaleDetail } from "../../sales/entities/sale-detail.entity";
+import { InventoryMovement } from "../../inventory/entities/inventory-movement.entity";
 
-@Entity('products')
+@Entity("products")
 export class Product extends BaseEntity {
   @Column()
   name: string;
@@ -18,10 +13,10 @@ export class Product extends BaseEntity {
   @Column({ nullable: true })
   description: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({ type: "decimal", precision: 10, scale: 2 })
   purchasePrice: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({ type: "decimal", precision: 10, scale: 2 })
   sellPrice: number;
 
   @Column({ default: 0 })
@@ -44,16 +39,19 @@ export class Product extends BaseEntity {
   categoryId: number;
 
   @ManyToOne(() => Category, (category) => category.products)
-  @JoinColumn({ name: 'categoryId' })
+  @JoinColumn({ name: "categoryId" })
   category: Category;
 
   @Column()
   storeId: number;
 
   @ManyToOne(() => Store, (store) => store.products)
-  @JoinColumn({ name: 'storeId' })
+  @JoinColumn({ name: "storeId" })
   store: Store;
 
   @OneToMany(() => SaleDetail, (saleDetail) => saleDetail.product)
   saleDetails: SaleDetail[];
+
+  @OneToMany(() => InventoryMovement, (movement) => movement.product)
+  inventoryMovements: InventoryMovement[];
 }

@@ -10,6 +10,7 @@ import { databaseConfig } from './config/database.config';
 // Modules
 import { AuthModule } from './modules/auth/auth.module';
 import { StoresModule } from './modules/stores/stores.module';
+import { CategoriesModule } from './modules/categories/categories.module';
 import { ProductsModule } from './modules/products/products.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { SalesModule } from './modules/sales/sales.module';
@@ -30,6 +31,7 @@ import { UploadsModule } from './modules/uploads/uploads.module';
     }),
     AuthModule,
     StoresModule,
+    CategoriesModule,
     ProductsModule,
     InventoryModule,
     SalesModule,
