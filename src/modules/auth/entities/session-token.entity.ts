@@ -3,7 +3,6 @@ import { BaseEntity } from "../../shared/base.entity";
 import { User } from "./user.entity";
 
 @Entity("session_tokens")
-@Index(["token"], { unique: true })
 @Index(["userId"])
 @Index(["expiresAt"])
 export class SessionToken extends BaseEntity {
