@@ -13,7 +13,9 @@ export class StoresService {
   ) {}
 
   async create(createStoreDto: CreateStoreDto): Promise<Store> {
-    const store = this.storeRepository.create(createStoreDto);
+    // Filtrar campos desconocidos como taxRate que no existen en la entidad
+    const { taxRate, ...validStoreData } = createStoreDto as any;
+    const store = this.storeRepository.create(validStoreData);
     return this.storeRepository.save(store);
   }
 
@@ -39,7 +41,9 @@ export class StoresService {
 
   async update(id: number, updateStoreDto: UpdateStoreDto): Promise<Store> {
     const store = await this.findOne(id);
-    Object.assign(store, updateStoreDto);
+    // Filtrar campos desconocidos como taxRate que no existen en la entidad
+    const { taxRate, ...validStoreData } = updateStoreDto as any;
+    Object.assign(store, validStoreData);
     return this.storeRepository.save(store);
   }
 
