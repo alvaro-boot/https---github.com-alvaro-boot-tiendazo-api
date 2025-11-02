@@ -19,7 +19,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      ignoreExpiration: false,
+      ignoreExpiration: true, // Ignorar expiración del JWT, verificamos la sesión en BD
       secretOrKey: configService.get("JWT_SECRET"),
       passReqToCallback: true, // Necesario para acceder al request completo
     });

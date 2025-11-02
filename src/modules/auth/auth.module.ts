@@ -23,7 +23,8 @@ import { ScheduleModule } from "@nestjs/schedule";
       useFactory: (configService: ConfigService) => ({
         secret: configService.get("JWT_SECRET"),
         signOptions: {
-          expiresIn: configService.get("JWT_EXPIRES_IN") || "24h",
+          // El JWT tendrá expiración larga, pero la sesión en BD controla la validez real
+          expiresIn: configService.get("JWT_EXPIRES_IN") || "30d",
         },
       }),
     }),

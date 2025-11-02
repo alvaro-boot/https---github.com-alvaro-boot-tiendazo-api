@@ -52,11 +52,15 @@ export class AuthService {
       role: user.role,
     };
 
-    const accessToken = this.jwtService.sign(payload);
+    // Generar token JWT con expiración larga (30 días)
+    // La sesión en BD controla la validez real
+    const accessToken = this.jwtService.sign(payload, {
+      expiresIn: '30d', // Token con expiración larga
+    });
 
     // Crear registro de sesión en la base de datos
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // Token válido por 7 días
+    expiresAt.setDate(expiresAt.getDate() + 7); // Sesión válida por 7 días (renovable)
 
     const sessionToken = this.sessionTokenRepository.create({
       token: accessToken,
@@ -227,10 +231,13 @@ export class AuthService {
     const now = new Date();
     const daysUntilExpiry = (session.expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
 
-    // Si faltan menos de 1 día para que expire, extender la sesión automáticamente
-    if (daysUntilExpiry < 1) {
+    // Si faltan menos de 2 días para que expire, extender la sesión automáticamente
+    // Esto asegura que la sesión siempre tenga al menos 7 días de validez
+    if (daysUntilExpiry < 2) {
       const newExpiresAt = new Date();
       newExpiresAt.setDate(newExpiresAt.getDate() + 7); // Extender por 7 días más
+      
+      console.log(`🔄 Extendiendo sesión automáticamente. Nuevo expiresAt: ${newExpiresAt}`);
       
       await this.sessionTokenRepository.update(
         { token, isActive: true },
@@ -267,18 +274,23 @@ export class AuthService {
       throw new UnauthorizedException("User not found");
     }
 
-    // Generar nuevo token JWT
+    // Generar nuevo token JWT (sin expiración, la controlamos por la sesión en BD)
     const payload = {
       username: user.username,
       sub: user.id,
       role: user.role,
     };
 
-    const newAccessToken = this.jwtService.sign(payload);
+    // Generar token sin expiración o con expiración muy larga (la sesión en BD controla la validez)
+    const newAccessToken = this.jwtService.sign(payload, {
+      expiresIn: '30d', // Token largo, pero la sesión en BD es la autoridad
+    });
 
     // Extender expiración de la sesión
     const newExpiresAt = new Date();
     newExpiresAt.setDate(newExpiresAt.getDate() + 7); // 7 días más
+
+    console.log(`🔄 Renovando sesión. Nuevo token generado. Nuevo expiresAt: ${newExpiresAt}`);
 
     // Actualizar sesión con nuevo token y nueva expiración
     session.token = newAccessToken;
