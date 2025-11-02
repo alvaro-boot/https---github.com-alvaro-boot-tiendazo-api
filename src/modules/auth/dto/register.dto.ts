@@ -5,8 +5,11 @@ import {
   MinLength,
   IsOptional,
   IsEnum,
+  IsNumber,
+  IsPositive,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import { UserRole } from '../entities/user.entity';
 
 export class RegisterDto {
@@ -40,4 +43,11 @@ export class RegisterDto {
   @IsEnum(UserRole)
   @IsOptional()
   role?: UserRole;
+
+  @ApiProperty({ example: 1, required: false })
+  @IsNumber()
+  @IsPositive()
+  @Type(() => Number)
+  @IsOptional()
+  storeId?: number;
 }

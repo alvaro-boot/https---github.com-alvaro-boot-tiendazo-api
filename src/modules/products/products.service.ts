@@ -2,6 +2,8 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, Like } from "typeorm";
 import { Product } from "./entities/product.entity";
+import { Category } from "../categories/entities/category.entity";
+import { Store } from "../stores/entities/store.entity";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
 import { SearchProductDto } from "./dto/search-product.dto";
@@ -10,12 +12,45 @@ import { SearchProductDto } from "./dto/search-product.dto";
 export class ProductsService {
   constructor(
     @InjectRepository(Product)
-    private productRepository: Repository<Product>
+    private productRepository: Repository<Product>,
+    @InjectRepository(Category)
+    private categoryRepository: Repository<Category>,
+    @InjectRepository(Store)
+    private storeRepository: Repository<Store>
   ) {}
 
   async create(createProductDto: CreateProductDto): Promise<Product> {
+    console.log("🔍 Creando producto con datos:", createProductDto);
+    
+    // Validar que la categoría existe
+    const category = await this.categoryRepository.findOne({
+      where: { id: createProductDto.categoryId },
+    });
+    
+    if (!category) {
+      throw new NotFoundException(
+        `Category with ID ${createProductDto.categoryId} not found`
+      );
+    }
+
+    // Validar que la tienda existe
+    const store = await this.storeRepository.findOne({
+      where: { id: createProductDto.storeId },
+    });
+
+    if (!store) {
+      throw new NotFoundException(
+        `Store with ID ${createProductDto.storeId} not found`
+      );
+    }
+
     const product = this.productRepository.create(createProductDto);
-    return this.productRepository.save(product);
+    console.log("📦 Producto creado (antes de guardar):", product);
+    
+    const savedProduct = await this.productRepository.save(product);
+    console.log("✅ Producto guardado exitosamente:", savedProduct);
+    
+    return savedProduct;
   }
 
   async findAll(searchDto?: SearchProductDto): Promise<Product[]> {

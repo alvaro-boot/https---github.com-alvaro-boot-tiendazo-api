@@ -32,8 +32,16 @@ export class StoresController {
   @Post()
   @Public()
   @ApiOperation({ summary: "Create a new store (public endpoint)" })
-  create(@Body() createStoreDto: CreateStoreDto) {
-    return this.storesService.create(createStoreDto);
+  async create(@Body() createStoreDto: CreateStoreDto) {
+    try {
+      console.log("📤 Recibida petición para crear tienda:", createStoreDto);
+      const store = await this.storesService.create(createStoreDto);
+      console.log("✅ Tienda creada exitosamente en el controlador:", store);
+      return store;
+    } catch (error) {
+      console.error("❌ Error en el controlador al crear tienda:", error);
+      throw error;
+    }
   }
 
   @Get()

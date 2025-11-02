@@ -31,8 +31,16 @@ export class ProductsController {
 
   @Post()
   @ApiOperation({ summary: "Create a new product" })
-  create(@Body() createProductDto: CreateProductDto) {
-    return this.productsService.create(createProductDto);
+  async create(@Body() createProductDto: CreateProductDto) {
+    try {
+      console.log("📤 Recibida petición para crear producto:", createProductDto);
+      const product = await this.productsService.create(createProductDto);
+      console.log("✅ Producto creado exitosamente en el controlador:", product);
+      return product;
+    } catch (error) {
+      console.error("❌ Error en el controlador al crear producto:", error);
+      throw error;
+    }
   }
 
   @Get()

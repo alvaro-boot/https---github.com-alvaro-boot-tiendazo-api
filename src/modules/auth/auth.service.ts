@@ -91,25 +91,62 @@ export class AuthService {
   }
 
   async register(registerDto: RegisterDto) {
-    const existingUser = await this.userRepository.findOne({
-      where: [{ username: registerDto.username }, { email: registerDto.email }],
-    });
+    try {
+      console.log("🔍 Registrando usuario con datos:", {
+        ...registerDto,
+        password: "***",
+      });
 
-    if (existingUser) {
-      throw new ConflictException("Username or email already exists");
+      const existingUser = await this.userRepository.findOne({
+        where: [{ username: registerDto.username }, { email: registerDto.email }],
+      });
+
+      if (existingUser) {
+        console.log("❌ Usuario ya existe:", existingUser);
+        throw new ConflictException("Username or email already exists");
+      }
+
+      console.log("🔐 Hasheando contraseña...");
+      const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+
+      console.log("👤 Creando entidad de usuario...");
+      const user = this.userRepository.create({
+        ...registerDto,
+        password: hashedPassword,
+      });
+      console.log("📦 Entidad de usuario creada:", { ...user, password: "***" });
+
+      console.log("💾 Guardando usuario en BD...");
+      const savedUser = await this.userRepository.save(user);
+      console.log("✅ Usuario guardado exitosamente en BD:", {
+        id: savedUser.id,
+        username: savedUser.username,
+        email: savedUser.email,
+        role: savedUser.role,
+        storeId: savedUser.storeId,
+      });
+
+      // Verificar que realmente se guardó
+      const verifiedUser = await this.userRepository.findOne({
+        where: { id: savedUser.id },
+      });
+
+      if (!verifiedUser) {
+        console.error("❌ ERROR: El usuario no se encontró después de guardar!");
+        throw new Error("Failed to save user to database");
+      }
+
+      console.log("✅ Usuario verificado en BD:", {
+        id: verifiedUser.id,
+        username: verifiedUser.username,
+      });
+
+      const { password: _, ...result } = savedUser;
+      return result;
+    } catch (error) {
+      console.error("❌ Error registrando usuario:", error);
+      throw error;
     }
-
-    const hashedPassword = await bcrypt.hash(registerDto.password, 10);
-
-    const user = this.userRepository.create({
-      ...registerDto,
-      password: hashedPassword,
-    });
-
-    const savedUser = await this.userRepository.save(user);
-    const { password: _, ...result } = savedUser;
-
-    return result;
   }
 
   async getProfile(userId: number) {

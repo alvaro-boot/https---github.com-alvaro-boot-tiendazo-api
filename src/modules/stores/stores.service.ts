@@ -13,12 +13,39 @@ export class StoresService {
   ) {}
 
   async create(createStoreDto: CreateStoreDto): Promise<Store> {
-    // Filtrar campos desconocidos como taxRate que no existen en la entidad
-    const dto = createStoreDto as any;
-    const { taxRate, ...validStoreData } = dto;
-    const store = this.storeRepository.create(validStoreData as Partial<Store>);
-    const savedStore: Store = await this.storeRepository.save(store) as Store;
-    return savedStore;
+    try {
+      console.log("🔍 Creando tienda con datos:", createStoreDto);
+      
+      // Filtrar campos desconocidos como taxRate que no existen en la entidad
+      const dto = createStoreDto as any;
+      const { taxRate, ...validStoreData } = dto;
+      
+      console.log("📦 Datos válidos después de filtrar:", validStoreData);
+      
+      const store = this.storeRepository.create(validStoreData as Partial<Store>);
+      console.log("🏪 Entidad de tienda creada:", store);
+      
+      const savedStore: Store = await this.storeRepository.save(store) as Store;
+      console.log("✅ Tienda guardada exitosamente en BD:", savedStore);
+      console.log("✅ ID de tienda guardada:", savedStore.id);
+      
+      // Verificar que realmente se guardó
+      const verifiedStore = await this.storeRepository.findOne({
+        where: { id: savedStore.id },
+      });
+      
+      if (!verifiedStore) {
+        console.error("❌ ERROR: La tienda no se encontró después de guardar!");
+        throw new Error("Failed to save store to database");
+      }
+      
+      console.log("✅ Tienda verificada en BD:", verifiedStore);
+      
+      return savedStore;
+    } catch (error) {
+      console.error("❌ Error creando tienda:", error);
+      throw error;
+    }
   }
 
   async findAll(): Promise<Store[]> {

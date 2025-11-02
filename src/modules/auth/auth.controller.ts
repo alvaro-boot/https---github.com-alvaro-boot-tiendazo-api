@@ -40,7 +40,18 @@ export class AuthController {
   @Post("register")
   @ApiOperation({ summary: "Register new user" })
   async register(@Body() registerDto: RegisterDto) {
-    return this.authService.register(registerDto);
+    try {
+      console.log("📤 Recibida petición para registrar usuario:", {
+        ...registerDto,
+        password: "***",
+      });
+      const user = await this.authService.register(registerDto);
+      console.log("✅ Usuario registrado exitosamente en el controlador:", user);
+      return user;
+    } catch (error) {
+      console.error("❌ Error en el controlador al registrar usuario:", error);
+      throw error;
+    }
   }
 
   @UseGuards(JwtAuthGuard)
