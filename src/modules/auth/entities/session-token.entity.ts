@@ -7,7 +7,7 @@ import { User } from "./user.entity";
 @Index(["userId"])
 @Index(["expiresAt"])
 export class SessionToken extends BaseEntity {
-  @Column({ type: "text", unique: true })
+  @Column({ type: "varchar", length: 500, unique: true })
   token: string;
 
   @Column()
