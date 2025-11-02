@@ -179,10 +179,80 @@ export class AuthService {
   }
 
   async updateSessionLastUsed(token: string): Promise<void> {
-    await this.sessionTokenRepository.update(
-      { token, isActive: true },
-      { lastUsedAt: new Date() }
-    );
+    const session = await this.sessionTokenRepository.findOne({
+      where: { token, isActive: true },
+    });
+
+    if (!session) {
+      return;
+    }
+
+    const now = new Date();
+    const daysUntilExpiry = (session.expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+
+    // Si faltan menos de 1 día para que expire, extender la sesión automáticamente
+    if (daysUntilExpiry < 1) {
+      const newExpiresAt = new Date();
+      newExpiresAt.setDate(newExpiresAt.getDate() + 7); // Extender por 7 días más
+      
+      await this.sessionTokenRepository.update(
+        { token, isActive: true },
+        { 
+          lastUsedAt: now,
+          expiresAt: newExpiresAt
+        }
+      );
+    } else {
+      // Solo actualizar lastUsedAt si no está cerca de expirar
+      await this.sessionTokenRepository.update(
+        { token, isActive: true },
+        { lastUsedAt: now }
+      );
+    }
+  }
+
+  async refreshSession(token: string): Promise<{ access_token: string; expiresAt: Date }> {
+    const session = await this.sessionTokenRepository.findOne({
+      where: { token, isActive: true },
+      relations: ["user"],
+    });
+
+    if (!session || session.expiresAt < new Date()) {
+      throw new UnauthorizedException("Invalid or expired session");
+    }
+
+    const user = await this.userRepository.findOne({
+      where: { id: session.userId, isActive: true },
+      relations: ["store"],
+    });
+
+    if (!user) {
+      throw new UnauthorizedException("User not found");
+    }
+
+    // Generar nuevo token JWT
+    const payload = {
+      username: user.username,
+      sub: user.id,
+      role: user.role,
+    };
+
+    const newAccessToken = this.jwtService.sign(payload);
+
+    // Extender expiración de la sesión
+    const newExpiresAt = new Date();
+    newExpiresAt.setDate(newExpiresAt.getDate() + 7); // 7 días más
+
+    // Actualizar sesión con nuevo token y nueva expiración
+    session.token = newAccessToken;
+    session.expiresAt = newExpiresAt;
+    session.lastUsedAt = new Date();
+    await this.sessionTokenRepository.save(session);
+
+    return {
+      access_token: newAccessToken,
+      expiresAt: newExpiresAt,
+    };
   }
 
   async validateSessionToken(token: string): Promise<SessionToken | null> {

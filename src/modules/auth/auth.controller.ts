@@ -8,6 +8,7 @@ import {
   Delete,
   Param,
   ParseIntPipe,
+  UnauthorizedException,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { AuthService } from "./auth.service";
@@ -105,5 +106,18 @@ export class AuthController {
   @ApiOperation({ summary: "Get session statistics for user" })
   async getSessionStats(@AuthUser() user: any): Promise<SessionStatsDto> {
     return this.authService.getSessionStats(user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post("refresh")
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Refresh current session token" })
+  async refreshSession(@Request() req) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      throw new UnauthorizedException("Invalid authorization header");
+    }
+    const token = authHeader.substring(7);
+    return this.authService.refreshSession(token);
   }
 }
