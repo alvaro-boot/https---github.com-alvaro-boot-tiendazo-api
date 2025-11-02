@@ -1,5 +1,6 @@
-import { IsString, IsNotEmpty, IsOptional } from "class-validator";
+import { IsString, IsNotEmpty, IsOptional, IsNumber, IsPositive } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
+import { Type } from "class-transformer";
 
 export class CreateCategoryDto {
   @ApiProperty({ example: "Electrónicos" })
@@ -19,4 +20,10 @@ export class CreateCategoryDto {
   @IsString()
   @IsOptional()
   image?: string;
+
+  @ApiProperty({ example: 1 })
+  @IsNumber()
+  @IsPositive()
+  @Type(() => Number)
+  storeId: number;
 }

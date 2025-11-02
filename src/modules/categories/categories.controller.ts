@@ -7,12 +7,14 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
 } from "@nestjs/common";
 import {
   ApiTags,
   ApiOperation,
   ApiBearerAuth,
   ApiParam,
+  ApiQuery,
 } from "@nestjs/swagger";
 import { CategoriesService } from "./categories.service";
 import { CreateCategoryDto } from "./dto/create-category.dto";
@@ -28,14 +30,23 @@ export class CategoriesController {
 
   @Post()
   @ApiOperation({ summary: "Create a new category" })
-  create(@Body() createCategoryDto: CreateCategoryDto) {
-    return this.categoriesService.create(createCategoryDto);
+  async create(@Body() createCategoryDto: CreateCategoryDto) {
+    try {
+      console.log("📤 Recibida petición para crear categoría:", createCategoryDto);
+      const category = await this.categoriesService.create(createCategoryDto);
+      console.log("✅ Categoría creada exitosamente en el controlador:", category);
+      return category;
+    } catch (error) {
+      console.error("❌ Error en el controlador al crear categoría:", error);
+      throw error;
+    }
   }
 
   @Get()
   @ApiOperation({ summary: "Get all categories" })
-  findAll() {
-    return this.categoriesService.findAll();
+  @ApiQuery({ name: "storeId", required: false, description: "Filter by store ID" })
+  findAll(@Query("storeId") storeId?: number) {
+    return this.categoriesService.findAll(storeId ? +storeId : undefined);
   }
 
   @Get(":id")

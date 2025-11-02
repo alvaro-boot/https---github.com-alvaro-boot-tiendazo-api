@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Category } from "./entities/category.entity";
+import { Store } from "../stores/entities/store.entity";
 import { CreateCategoryDto } from "./dto/create-category.dto";
 import { UpdateCategoryDto } from "./dto/update-category.dto";
 
@@ -9,17 +10,58 @@ import { UpdateCategoryDto } from "./dto/update-category.dto";
 export class CategoriesService {
   constructor(
     @InjectRepository(Category)
-    private categoryRepository: Repository<Category>
+    private categoryRepository: Repository<Category>,
+    @InjectRepository(Store)
+    private storeRepository: Repository<Store>
   ) {}
 
   async create(createCategoryDto: CreateCategoryDto): Promise<Category> {
-    const category = this.categoryRepository.create(createCategoryDto);
-    return this.categoryRepository.save(category);
+    try {
+      console.log("🔍 Creando categoría con datos:", createCategoryDto);
+
+      // Validar que la tienda existe
+      const store = await this.storeRepository.findOne({
+        where: { id: createCategoryDto.storeId },
+      });
+
+      if (!store) {
+        throw new NotFoundException(
+          `Store with ID ${createCategoryDto.storeId} not found`
+        );
+      }
+
+      console.log("✅ Tienda encontrada:", store.name);
+
+      const category = this.categoryRepository.create(createCategoryDto);
+      console.log("📦 Entidad de categoría creada:", category);
+
+      const savedCategory = await this.categoryRepository.save(category);
+      console.log("✅ Categoría guardada exitosamente en BD:", savedCategory);
+
+      // Verificar que realmente se guardó
+      const verifiedCategory = await this.categoryRepository.findOne({
+        where: { id: savedCategory.id },
+      });
+
+      if (!verifiedCategory) {
+        console.error("❌ ERROR: La categoría no se encontró después de guardar!");
+        throw new Error("Failed to save category to database");
+      }
+
+      console.log("✅ Categoría verificada en BD:", verifiedCategory);
+
+      return savedCategory;
+    } catch (error) {
+      console.error("❌ Error creando categoría:", error);
+      throw error;
+    }
   }
 
-  async findAll(): Promise<Category[]> {
+  async findAll(storeId?: number): Promise<Category[]> {
+    const where = storeId ? { storeId } : {};
     return this.categoryRepository.find({
-      relations: ["products"],
+      where,
+      relations: ["products", "store"],
     });
   }
 

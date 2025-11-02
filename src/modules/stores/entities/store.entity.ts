@@ -3,6 +3,7 @@ import { BaseEntity } from "../../shared/base.entity";
 import { User } from "../../auth/entities/user.entity";
 import { Product } from "../../products/entities/product.entity";
 import { Sale } from "../../sales/entities/sale.entity";
+import { Category } from "../../categories/entities/category.entity";
 
 @Entity("stores")
 export class Store extends BaseEntity {
@@ -42,4 +43,7 @@ export class Store extends BaseEntity {
 
   @OneToMany(() => Sale, (sale) => sale.store)
   sales: Sale[];
+
+  @OneToMany(() => Category, (category) => category.store)
+  categories: Category[];
 }
