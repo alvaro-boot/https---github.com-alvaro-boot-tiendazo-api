@@ -14,9 +14,11 @@ export class StoresService {
 
   async create(createStoreDto: CreateStoreDto): Promise<Store> {
     // Filtrar campos desconocidos como taxRate que no existen en la entidad
-    const { taxRate, ...validStoreData } = createStoreDto as any;
-    const store = this.storeRepository.create(validStoreData);
-    return this.storeRepository.save(store);
+    const dto = createStoreDto as any;
+    const { taxRate, ...validStoreData } = dto;
+    const store = this.storeRepository.create(validStoreData as Partial<Store>);
+    const savedStore: Store = await this.storeRepository.save(store) as Store;
+    return savedStore;
   }
 
   async findAll(): Promise<Store[]> {
