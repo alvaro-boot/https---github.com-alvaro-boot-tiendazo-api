@@ -181,18 +181,18 @@ export class AuthService {
     return result;
   }
 
-  async getAllUsers(): Promise<User[]> {
+  async getAllUsers(): Promise<Omit<User, 'password'>[]> {
     const users = await this.userRepository.find({
       relations: ["store"],
       order: { createdAt: "DESC" },
     });
     return users.map((user) => {
       const { password: _, ...result } = user;
-      return result;
+      return result as Omit<User, 'password'>;
     });
   }
 
-  async updateUser(id: number, updateData: Partial<RegisterDto>): Promise<User> {
+  async updateUser(id: number, updateData: Partial<RegisterDto>): Promise<Omit<User, 'password'>> {
     const user = await this.userRepository.findOne({ where: { id } });
     if (!user) {
       throw new NotFoundException("User not found");
@@ -229,7 +229,7 @@ export class AuthService {
     });
 
     const { password: _, ...result } = updatedUser;
-    return result;
+    return result as Omit<User, 'password'>;
   }
 
   async deleteUser(id: number): Promise<void> {
