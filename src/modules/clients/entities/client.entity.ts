@@ -24,7 +24,10 @@ export class Client extends BaseEntity {
   @Column({ nullable: true })
   storeId: number;
 
-  @ManyToOne(() => Store, (store) => store.clients, { nullable: true, onDelete: 'SET NULL' })
+  @ManyToOne(() => Store, (store) => store.clients, { 
+    nullable: true, 
+    onDelete: 'SET NULL'
+  })
   @JoinColumn({ name: 'storeId' })
   store: Store;
 
