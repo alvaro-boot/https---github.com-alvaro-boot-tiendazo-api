@@ -85,9 +85,11 @@ export class SalesService {
 
       // Calcular ganancia con precisión decimal
       const purchasePrice = parseFloat(String(product.purchasePrice || 0));
-      const profit = parseFloat(((unitPrice - purchasePrice) * quantity).toFixed(2));
+      const profit = parseFloat(
+        ((unitPrice - purchasePrice) * quantity).toFixed(2)
+      );
       totalProfit += profit;
-      
+
       saleDetails.push(saleDetail);
     }
 
@@ -118,7 +120,9 @@ export class SalesService {
         const newDebt = Number((currentDebt + saleTotal).toFixed(2));
         client.debt = newDebt;
         await this.clientRepository.save(client);
-        console.log(`✅ Deuda actualizada para cliente ${client.id}: ${currentDebt} + ${saleTotal} = ${newDebt}`);
+        console.log(
+          `✅ Deuda actualizada para cliente ${client.id}: ${currentDebt} + ${saleTotal} = ${newDebt}`
+        );
       }
     }
 
@@ -136,9 +140,15 @@ export class SalesService {
       .where("sale.deletedAt IS NULL"); // Excluir ventas eliminadas lógicamente
 
     if (reportDto?.startDate && reportDto?.endDate) {
+      // Asegurar que las fechas se comparan correctamente incluyendo todo el día
+      // Convertir fecha de inicio a inicio del día (00:00:00)
+      // Convertir fecha de fin a fin del día (23:59:59)
+      const startDateTime = `${reportDto.startDate} 00:00:00`;
+      const endDateTime = `${reportDto.endDate} 23:59:59`;
+
       query.andWhere("sale.createdAt BETWEEN :startDate AND :endDate", {
-        startDate: reportDto.startDate,
-        endDate: reportDto.endDate,
+        startDate: startDateTime,
+        endDate: endDateTime,
       });
     }
 
@@ -216,40 +226,47 @@ export class SalesService {
     if (!sale) {
       throw new NotFoundException(`Sale with ID ${id} not found`);
     }
-    
+
     // Restaurar stock de productos si la venta no está cancelada
     if (!sale.canceledAt && sale.details && sale.details.length > 0) {
       for (const detail of sale.details) {
         const product = await this.productRepository.findOne({
           where: { id: detail.productId },
         });
-        
+
         if (product) {
           const currentStock = parseFloat(String(product.stock || 0));
           const quantity = parseInt(String(detail.quantity || 0));
           product.stock = currentStock + quantity;
           await this.productRepository.save(product);
-          console.log(`✅ Stock restaurado para producto ${product.id}: ${currentStock} + ${quantity} = ${product.stock}`);
+          console.log(
+            `✅ Stock restaurado para producto ${product.id}: ${currentStock} + ${quantity} = ${product.stock}`
+          );
         }
       }
     }
-    
+
     // Restaurar deuda del cliente si es venta a crédito
     if (sale.isCredit && sale.clientId) {
       const client = await this.clientRepository.findOne({
         where: { id: sale.clientId },
       });
-      
+
       if (client && sale.total) {
         const currentDebt = parseFloat(String(client.debt || 0));
         const saleTotal = parseFloat(String(sale.total || 0));
-        const newDebt = Math.max(0, parseFloat((currentDebt - saleTotal).toFixed(2)));
+        const newDebt = Math.max(
+          0,
+          parseFloat((currentDebt - saleTotal).toFixed(2))
+        );
         client.debt = newDebt;
         await this.clientRepository.save(client);
-        console.log(`✅ Deuda restaurada para cliente ${client.id}: ${currentDebt} - ${saleTotal} = ${newDebt}`);
+        console.log(
+          `✅ Deuda restaurada para cliente ${client.id}: ${currentDebt} - ${saleTotal} = ${newDebt}`
+        );
       }
     }
-    
+
     // Soft delete - usar softRemove en lugar de remove
     await this.saleRepository.softRemove(sale);
     console.log(`✅ Venta ${id} eliminada lógicamente (soft delete)`);
@@ -265,9 +282,18 @@ export class SalesService {
     const cashSales = totalCount - creditSales;
 
     // Calcular productos más vendidos
-    const productSales = new Map<number, { name: string; quantity: number; revenue: number }>();
-    const productCreditSales = new Map<number, { name: string; quantity: number; revenue: number }>();
-    const clientDebts = new Map<number, { name: string; totalDebt: number; saleCount: number }>();
+    const productSales = new Map<
+      number,
+      { name: string; quantity: number; revenue: number }
+    >();
+    const productCreditSales = new Map<
+      number,
+      { name: string; quantity: number; revenue: number }
+    >();
+    const clientDebts = new Map<
+      number,
+      { name: string; totalDebt: number; saleCount: number }
+    >();
 
     sales.forEach((sale) => {
       // Productos más vendidos
@@ -280,7 +306,11 @@ export class SalesService {
             const revenue = parseFloat(String(detail.subtotal || 0));
 
             if (!productSales.has(productId)) {
-              productSales.set(productId, { name: productName, quantity: 0, revenue: 0 });
+              productSales.set(productId, {
+                name: productName,
+                quantity: 0,
+                revenue: 0,
+              });
             }
             const product = productSales.get(productId)!;
             product.quantity += quantity;
@@ -289,7 +319,11 @@ export class SalesService {
             // Productos más fiados
             if (sale.isCredit) {
               if (!productCreditSales.has(productId)) {
-                productCreditSales.set(productId, { name: productName, quantity: 0, revenue: 0 });
+                productCreditSales.set(productId, {
+                  name: productName,
+                  quantity: 0,
+                  revenue: 0,
+                });
               }
               const creditProduct = productCreditSales.get(productId)!;
               creditProduct.quantity += quantity;
@@ -303,9 +337,13 @@ export class SalesService {
       if (sale.isCredit && sale.client) {
         const clientId = sale.client.id;
         const clientName = sale.client.fullName;
-        
+
         if (!clientDebts.has(clientId)) {
-          clientDebts.set(clientId, { name: clientName, totalDebt: 0, saleCount: 0 });
+          clientDebts.set(clientId, {
+            name: clientName,
+            totalDebt: 0,
+            saleCount: 0,
+          });
         }
         const client = clientDebts.get(clientId)!;
         client.totalDebt += parseFloat(String(sale.total || 0));
