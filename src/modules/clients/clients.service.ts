@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, Like } from "typeorm";
 import { Client } from "./entities/client.entity";
+import { Store } from "../stores/entities/store.entity";
 import { CreateClientDto } from "./dto/create-client.dto";
 import { UpdateClientDto } from "./dto/update-client.dto";
 import { SearchClientDto } from "./dto/search-client.dto";
@@ -10,10 +11,24 @@ import { SearchClientDto } from "./dto/search-client.dto";
 export class ClientsService {
   constructor(
     @InjectRepository(Client)
-    private clientRepository: Repository<Client>
+    private clientRepository: Repository<Client>,
+    @InjectRepository(Store)
+    private storeRepository: Repository<Store>
   ) {}
 
   async create(createClientDto: CreateClientDto): Promise<Client> {
+    // Validar que la tienda existe si se proporciona storeId
+    if (createClientDto.storeId) {
+      const store = await this.storeRepository.findOne({
+        where: { id: createClientDto.storeId },
+      });
+      if (!store) {
+        throw new NotFoundException(
+          `Store with ID ${createClientDto.storeId} not found`
+        );
+      }
+    }
+
     // Limpiar email vacío (convertir a undefined o null)
     const cleanedDto = {
       ...createClientDto,

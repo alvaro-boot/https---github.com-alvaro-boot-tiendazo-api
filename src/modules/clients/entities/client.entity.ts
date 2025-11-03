@@ -21,10 +21,10 @@ export class Client extends BaseEntity {
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   debt: number;
 
-  @Column()
+  @Column({ nullable: true })
   storeId: number;
 
-  @ManyToOne(() => Store, (store) => store.clients)
+  @ManyToOne(() => Store, (store) => store.clients, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'storeId' })
   store: Store;
 
