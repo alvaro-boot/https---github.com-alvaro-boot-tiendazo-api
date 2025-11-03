@@ -4,6 +4,7 @@ import { User } from "../../auth/entities/user.entity";
 import { Product } from "../../products/entities/product.entity";
 import { Sale } from "../../sales/entities/sale.entity";
 import { Category } from "../../categories/entities/category.entity";
+import { Client } from "../../clients/entities/client.entity";
 
 @Entity("stores")
 export class Store extends BaseEntity {
