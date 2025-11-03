@@ -96,8 +96,12 @@ export class SalesService {
         where: { id: savedSale.clientId },
       });
       if (client) {
-        client.debt += savedSale.total;
+        // Convertir valores a número para asegurar precisión
+        const currentDebt = parseFloat(String(client.debt || 0));
+        const saleTotal = parseFloat(String(savedSale.total || 0));
+        client.debt = currentDebt + saleTotal;
         await this.clientRepository.save(client);
+        console.log(`✅ Deuda actualizada para cliente ${client.id}: ${currentDebt} + ${saleTotal} = ${client.debt}`);
       }
     }
 

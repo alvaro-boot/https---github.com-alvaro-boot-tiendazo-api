@@ -57,11 +57,12 @@ export class ProductsService {
     const query = this.productRepository
       .createQueryBuilder("product")
       .leftJoinAndSelect("product.category", "category")
-      .leftJoinAndSelect("product.store", "store");
+      .leftJoinAndSelect("product.store", "store")
+      .where("product.deletedAt IS NULL"); // Excluir productos eliminados
 
     if (searchDto?.q) {
-      query.where(
-        "product.name LIKE :search OR product.description LIKE :search",
+      query.andWhere(
+        "(product.name LIKE :search OR product.description LIKE :search)",
         {
           search: `%${searchDto.q}%`,
         }
@@ -84,10 +85,15 @@ export class ProductsService {
   }
 
   async findOne(id: number): Promise<Product> {
-    const product = await this.productRepository.findOne({
-      where: { id },
-      relations: ["category", "store", "saleDetails"],
-    });
+    // Usar query builder para excluir productos eliminados explícitamente
+    const product = await this.productRepository
+      .createQueryBuilder("product")
+      .where("product.id = :id", { id })
+      .andWhere("product.deletedAt IS NULL") // Excluir productos eliminados
+      .leftJoinAndSelect("product.category", "category")
+      .leftJoinAndSelect("product.store", "store")
+      .leftJoinAndSelect("product.saleDetails", "saleDetails")
+      .getOne();
 
     if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`);
@@ -107,8 +113,9 @@ export class ProductsService {
 
   async remove(id: number): Promise<void> {
     const product = await this.findOne(id);
-    product.isActive = false;
-    await this.productRepository.save(product);
+    // Usar soft delete de TypeORM para establecer deletedAt
+    await this.productRepository.softRemove(product);
+    console.log(`✅ Producto ${id} eliminado (soft delete), deletedAt establecido`);
   }
 
   async updateStock(
@@ -134,6 +141,7 @@ export class ProductsService {
     const query = this.productRepository
       .createQueryBuilder("product")
       .where("product.stock <= product.minStock")
+      .andWhere("product.deletedAt IS NULL") // Excluir productos eliminados
       .andWhere("product.isActive = :isActive", { isActive: true });
 
     if (storeId) {

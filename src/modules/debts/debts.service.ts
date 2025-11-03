@@ -30,13 +30,15 @@ export class DebtsService {
       throw new BadRequestException('Payment amount exceeds client debt');
     }
 
-    const previousDebt = client.debt;
-    const newDebt = previousDebt - amount;
+    // Convertir valores a número para asegurar precisión
+    const previousDebt = parseFloat(String(client.debt || 0));
+    const paymentAmount = parseFloat(String(amount || 0));
+    const newDebt = previousDebt - paymentAmount;
 
     // Crear el pago
     const payment = this.paymentRepository.create({
       clientId,
-      amount,
+      amount: paymentAmount,
       paymentType,
       reference,
       notes,

@@ -85,22 +85,30 @@ export class ClientsService {
   ): Promise<Client> {
     const client = await this.findOne(id);
 
+    // Convertir valores a número para asegurar precisión
+    const currentDebt = parseFloat(String(client.debt || 0));
+    const operationAmount = parseFloat(String(amount || 0));
+    
     if (operation === "add") {
-      client.debt += amount;
+      client.debt = currentDebt + operationAmount;
     } else {
-      if (client.debt < amount) {
+      if (currentDebt < operationAmount) {
         throw new Error("Insufficient debt amount");
       }
-      client.debt -= amount;
+      client.debt = currentDebt - operationAmount;
     }
 
     return this.clientRepository.save(client);
   }
 
   async getClientsWithDebt(): Promise<Client[]> {
-    return this.clientRepository.find({
-      where: { debt: { $gt: 0 } } as any,
-      relations: ["sales"],
-    });
+    return this.clientRepository
+      .createQueryBuilder('client')
+      .where('client.debt > :minDebt', { minDebt: 0 })
+      .leftJoinAndSelect('client.sales', 'sales')
+      .leftJoinAndSelect('sales.details', 'details')
+      .leftJoinAndSelect('details.product', 'product')
+      .orderBy('client.debt', 'DESC')
+      .getMany();
   }
 }
