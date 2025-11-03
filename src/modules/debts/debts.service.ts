@@ -128,18 +128,20 @@ export class DebtsService {
   }
 
   async getClientsWithDebt(): Promise<Client[]> {
-    return this.clientRepository.find({
-      where: { debt: { $gt: 0 } } as any,
-      order: { debt: 'DESC' },
-    });
+    return this.clientRepository
+      .createQueryBuilder('client')
+      .where('client.debt > :minDebt', { minDebt: 0 })
+      .orderBy('client.debt', 'DESC')
+      .getMany();
   }
 
-  async getTotalDebt(): Promise<number> {
+  async getTotalDebt(): Promise<{ total: number }> {
     const result = await this.clientRepository
       .createQueryBuilder('client')
       .select('SUM(client.debt)', 'total')
       .getRawOne();
 
-    return parseFloat(result.total) || 0;
+    const total = parseFloat(result?.total) || 0;
+    return { total };
   }
 }

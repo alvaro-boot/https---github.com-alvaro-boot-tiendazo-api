@@ -14,7 +14,15 @@ export class ClientsService {
   ) {}
 
   async create(createClientDto: CreateClientDto): Promise<Client> {
-    const client = this.clientRepository.create(createClientDto);
+    // Limpiar email vacío (convertir a undefined o null)
+    const cleanedDto = {
+      ...createClientDto,
+      email: createClientDto.email && createClientDto.email.trim() !== "" 
+        ? createClientDto.email.trim() 
+        : undefined,
+    };
+    
+    const client = this.clientRepository.create(cleanedDto);
     return this.clientRepository.save(client);
   }
 
@@ -50,7 +58,18 @@ export class ClientsService {
 
   async update(id: number, updateClientDto: UpdateClientDto): Promise<Client> {
     const client = await this.findOne(id);
-    Object.assign(client, updateClientDto);
+    
+    // Limpiar email vacío (convertir a undefined o null)
+    const cleanedDto = {
+      ...updateClientDto,
+      email: updateClientDto.email !== undefined 
+        ? (updateClientDto.email && updateClientDto.email.trim() !== "" 
+          ? updateClientDto.email.trim() 
+          : undefined)
+        : updateClientDto.email,
+    };
+    
+    Object.assign(client, cleanedDto);
     return this.clientRepository.save(client);
   }
 

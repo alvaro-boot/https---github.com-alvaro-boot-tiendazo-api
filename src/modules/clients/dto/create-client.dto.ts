@@ -5,9 +5,10 @@ import {
   IsEmail,
   IsNumber,
   Min,
+  ValidateIf,
 } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
-import { Type } from "class-transformer";
+import { Type, Transform } from "class-transformer";
 
 export class CreateClientDto {
   @ApiProperty({ example: "Juan Pérez" })
@@ -16,7 +17,9 @@ export class CreateClientDto {
   fullName: string;
 
   @ApiProperty({ example: "juan@example.com", required: false })
-  @IsEmail()
+  @Transform(({ value }) => (value === "" || value === null ? undefined : value))
+  @ValidateIf((o) => o.email !== undefined && o.email !== null && o.email !== "")
+  @IsEmail({}, { message: "El email debe ser válido" })
   @IsOptional()
   email?: string;
 
