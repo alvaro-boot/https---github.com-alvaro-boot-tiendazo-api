@@ -38,14 +38,16 @@ export class ClientsController {
   @Get()
   @ApiOperation({ summary: "Get all clients with optional search" })
   @ApiQuery({ name: "q", required: false, description: "Search query" })
+  @ApiQuery({ name: "storeId", required: false, description: "Filter by store" })
   findAll(@Query() searchDto: SearchClientDto) {
     return this.clientsService.findAll(searchDto);
   }
 
   @Get("with-debt")
   @ApiOperation({ summary: "Get clients with outstanding debt" })
-  getClientsWithDebt() {
-    return this.clientsService.getClientsWithDebt();
+  @ApiQuery({ name: "storeId", required: false, description: "Filter by store" })
+  getClientsWithDebt(@Query("storeId") storeId?: number) {
+    return this.clientsService.getClientsWithDebt(storeId ? Number(storeId) : undefined);
   }
 
   @Get(":id")

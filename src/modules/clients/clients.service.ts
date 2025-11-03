@@ -29,15 +29,33 @@ export class ClientsService {
   async findAll(searchDto?: SearchClientDto): Promise<Client[]> {
     const query = this.clientRepository
       .createQueryBuilder("client")
-      .leftJoinAndSelect("client.sales", "sales");
+      .leftJoinAndSelect("client.sales", "sales")
+      .leftJoinAndSelect("client.store", "store");
+
+    // Filtrar por tienda si se proporciona
+    if (searchDto?.storeId) {
+      query.where("client.storeId = :storeId", {
+        storeId: searchDto.storeId,
+      });
+    }
 
     if (searchDto?.q) {
-      query.where(
-        "client.fullName LIKE :search OR client.email LIKE :search OR client.phone LIKE :search",
-        {
-          search: `%${searchDto.q}%`,
-        }
-      );
+      // Si ya hay un where, usar andWhere
+      if (searchDto?.storeId) {
+        query.andWhere(
+          "(client.fullName LIKE :search OR client.email LIKE :search OR client.phone LIKE :search)",
+          {
+            search: `%${searchDto.q}%`,
+          }
+        );
+      } else {
+        query.where(
+          "client.fullName LIKE :search OR client.email LIKE :search OR client.phone LIKE :search",
+          {
+            search: `%${searchDto.q}%`,
+          }
+        );
+      }
     }
 
     return query.getMany();
@@ -101,14 +119,22 @@ export class ClientsService {
     return this.clientRepository.save(client);
   }
 
-  async getClientsWithDebt(): Promise<Client[]> {
-    return this.clientRepository
+  async getClientsWithDebt(storeId?: number): Promise<Client[]> {
+    const query = this.clientRepository
       .createQueryBuilder('client')
       .where('client.debt > :minDebt', { minDebt: 0 })
       .leftJoinAndSelect('client.sales', 'sales')
       .leftJoinAndSelect('sales.details', 'details')
       .leftJoinAndSelect('details.product', 'product')
-      .orderBy('client.debt', 'DESC')
-      .getMany();
+      .leftJoinAndSelect('client.store', 'store');
+
+    // Filtrar por tienda si se proporciona
+    if (storeId) {
+      query.andWhere('client.storeId = :storeId', { storeId });
+    }
+
+    query.orderBy('client.debt', 'DESC');
+    
+    return query.getMany();
   }
 }

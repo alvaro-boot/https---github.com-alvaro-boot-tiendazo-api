@@ -48,16 +48,16 @@ export class SalesService {
       }
     }
 
-    // Crear la venta
+    // Crear la venta (sin guardar aún)
     const sale = this.saleRepository.create({
       ...saleData,
       userId,
       profit: 0, // Se calculará después
+      total: 0, // Se calculará desde los detalles para asegurar precisión
     });
 
-    const savedSale = await this.saleRepository.save(sale);
-
-    // Crear detalles y actualizar stock
+    // Primero calcular el total desde los detalles y crear los detalles
+    let calculatedTotal = 0;
     let totalProfit = 0;
     const saleDetails = [];
 
@@ -66,29 +66,43 @@ export class SalesService {
         where: { id: detail.productId },
       });
 
+      // Calcular subtotal con precisión decimal
+      const unitPrice = parseFloat(String(detail.unitPrice || 0));
+      const quantity = parseInt(String(detail.quantity || 0));
+      const subtotal = parseFloat((unitPrice * quantity).toFixed(2));
+      calculatedTotal += subtotal;
+
       // Crear detalle de venta
       const saleDetail = this.saleDetailRepository.create({
         ...detail,
-        saleId: savedSale.id,
-        subtotal: detail.quantity * detail.unitPrice,
+        saleId: 0, // Se actualizará después de guardar la venta
+        subtotal: subtotal,
       });
 
-      const savedDetail = await this.saleDetailRepository.save(saleDetail);
-      saleDetails.push(savedDetail);
-
       // Actualizar stock
-      product.stock -= detail.quantity;
+      product.stock -= quantity;
       await this.productRepository.save(product);
 
-      // Calcular ganancia
-      const profit =
-        (detail.unitPrice - product.purchasePrice) * detail.quantity;
+      // Calcular ganancia con precisión decimal
+      const purchasePrice = parseFloat(String(product.purchasePrice || 0));
+      const profit = parseFloat(((unitPrice - purchasePrice) * quantity).toFixed(2));
       totalProfit += profit;
+      
+      saleDetails.push(saleDetail);
     }
 
-    // Actualizar ganancia total
-    savedSale.profit = totalProfit;
-    await this.saleRepository.save(savedSale);
+    // Establecer el total calculado desde los detalles
+    sale.total = parseFloat(calculatedTotal.toFixed(2));
+    sale.profit = parseFloat(totalProfit.toFixed(2));
+
+    // Guardar la venta con el total correcto
+    const savedSale = await this.saleRepository.save(sale);
+
+    // Ahora guardar los detalles con el saleId correcto
+    for (const detail of saleDetails) {
+      detail.saleId = savedSale.id;
+      await this.saleDetailRepository.save(detail);
+    }
 
     // Si es venta a crédito, actualizar deuda del cliente
     if (savedSale.isCredit && savedSale.clientId) {
@@ -97,11 +111,14 @@ export class SalesService {
       });
       if (client) {
         // Convertir valores a número para asegurar precisión
-        const currentDebt = parseFloat(String(client.debt || 0));
-        const saleTotal = parseFloat(String(savedSale.total || 0));
-        client.debt = currentDebt + saleTotal;
+        // Usar Number() en lugar de parseFloat() para manejar correctamente los decimales de MySQL
+        const currentDebt = Number(client.debt || 0);
+        const saleTotal = Number(savedSale.total || 0);
+        // Calcular nueva deuda con precisión
+        const newDebt = Number((currentDebt + saleTotal).toFixed(2));
+        client.debt = newDebt;
         await this.clientRepository.save(client);
-        console.log(`✅ Deuda actualizada para cliente ${client.id}: ${currentDebt} + ${saleTotal} = ${client.debt}`);
+        console.log(`✅ Deuda actualizada para cliente ${client.id}: ${currentDebt} + ${saleTotal} = ${newDebt}`);
       }
     }
 

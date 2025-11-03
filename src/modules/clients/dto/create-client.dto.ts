@@ -39,4 +39,10 @@ export class CreateClientDto {
   @Type(() => Number)
   @IsOptional()
   debt?: number;
+
+  @ApiProperty({ example: 1 })
+  @IsNumber()
+  @IsNotEmpty()
+  @Type(() => Number)
+  storeId: number;
 }

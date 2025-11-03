@@ -46,4 +46,7 @@ export class Store extends BaseEntity {
 
   @OneToMany(() => Category, (category) => category.store)
   categories: Category[];
+
+  @OneToMany(() => Client, (client) => client.store)
+  clients: Client[];
 }
