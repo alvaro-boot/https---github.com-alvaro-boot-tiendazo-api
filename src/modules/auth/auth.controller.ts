@@ -9,6 +9,7 @@ import {
   Param,
   ParseIntPipe,
   UnauthorizedException,
+  Patch,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { AuthService } from "./auth.service";
@@ -130,5 +131,49 @@ export class AuthController {
     }
     const token = authHeader.substring(7);
     return this.authService.refreshSession(token);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get("users")
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Get all users (Admin only)" })
+  async getAllUsers(@AuthUser() user: any) {
+    if (user.role !== "ADMIN") {
+      throw new UnauthorizedException("Only admins can access this endpoint");
+    }
+    return this.authService.getAllUsers();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch("users/:id")
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Update user (Admin only)" })
+  async updateUser(
+    @Param("id", ParseIntPipe) id: number,
+    @Body() updateData: Partial<RegisterDto>,
+    @AuthUser() user: any
+  ) {
+    if (user.role !== "ADMIN") {
+      throw new UnauthorizedException("Only admins can update users");
+    }
+    return this.authService.updateUser(id, updateData);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete("users/:id")
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Delete user (Admin only)" })
+  async deleteUser(
+    @Param("id", ParseIntPipe) id: number,
+    @AuthUser() user: any
+  ) {
+    if (user.role !== "ADMIN") {
+      throw new UnauthorizedException("Only admins can delete users");
+    }
+    if (user.id === id) {
+      throw new UnauthorizedException("Cannot delete your own account");
+    }
+    await this.authService.deleteUser(id);
+    return { message: "User deleted successfully" };
   }
 }

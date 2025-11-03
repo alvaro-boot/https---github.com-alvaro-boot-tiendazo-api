@@ -132,7 +132,8 @@ export class SalesService {
       .leftJoinAndSelect("sale.store", "store")
       .leftJoinAndSelect("sale.client", "client")
       .leftJoinAndSelect("sale.details", "details")
-      .leftJoinAndSelect("details.product", "product");
+      .leftJoinAndSelect("details.product", "product")
+      .where("sale.deletedAt IS NULL"); // Excluir ventas eliminadas lógicamente
 
     if (reportDto?.startDate && reportDto?.endDate) {
       query.andWhere("sale.createdAt BETWEEN :startDate AND :endDate", {
@@ -149,10 +150,16 @@ export class SalesService {
   }
 
   async findOne(id: number): Promise<Sale> {
-    const sale = await this.saleRepository.findOne({
-      where: { id },
-      relations: ["user", "store", "client", "details", "details.product"],
-    });
+    const sale = await this.saleRepository
+      .createQueryBuilder("sale")
+      .leftJoinAndSelect("sale.user", "user")
+      .leftJoinAndSelect("sale.store", "store")
+      .leftJoinAndSelect("sale.client", "client")
+      .leftJoinAndSelect("sale.details", "details")
+      .leftJoinAndSelect("details.product", "product")
+      .where("sale.id = :id", { id })
+      .andWhere("sale.deletedAt IS NULL") // Excluir ventas eliminadas lógicamente
+      .getOne();
 
     if (!sale) {
       throw new NotFoundException(`Sale with ID ${id} not found`);
@@ -201,8 +208,51 @@ export class SalesService {
   }
 
   async remove(id: number): Promise<void> {
-    const sale = await this.findOne(id);
-    await this.saleRepository.remove(sale);
+    const sale = await this.saleRepository.findOne({
+      where: { id },
+      relations: ["details"],
+    });
+
+    if (!sale) {
+      throw new NotFoundException(`Sale with ID ${id} not found`);
+    }
+    
+    // Restaurar stock de productos si la venta no está cancelada
+    if (!sale.canceledAt && sale.details && sale.details.length > 0) {
+      for (const detail of sale.details) {
+        const product = await this.productRepository.findOne({
+          where: { id: detail.productId },
+        });
+        
+        if (product) {
+          const currentStock = parseFloat(String(product.stock || 0));
+          const quantity = parseInt(String(detail.quantity || 0));
+          product.stock = currentStock + quantity;
+          await this.productRepository.save(product);
+          console.log(`✅ Stock restaurado para producto ${product.id}: ${currentStock} + ${quantity} = ${product.stock}`);
+        }
+      }
+    }
+    
+    // Restaurar deuda del cliente si es venta a crédito
+    if (sale.isCredit && sale.clientId) {
+      const client = await this.clientRepository.findOne({
+        where: { id: sale.clientId },
+      });
+      
+      if (client && sale.total) {
+        const currentDebt = parseFloat(String(client.debt || 0));
+        const saleTotal = parseFloat(String(sale.total || 0));
+        const newDebt = Math.max(0, parseFloat((currentDebt - saleTotal).toFixed(2)));
+        client.debt = newDebt;
+        await this.clientRepository.save(client);
+        console.log(`✅ Deuda restaurada para cliente ${client.id}: ${currentDebt} - ${saleTotal} = ${newDebt}`);
+      }
+    }
+    
+    // Soft delete - usar softRemove en lugar de remove
+    await this.saleRepository.softRemove(sale);
+    console.log(`✅ Venta ${id} eliminada lógicamente (soft delete)`);
   }
 
   async getSalesReport(reportDto: SaleReportDto) {

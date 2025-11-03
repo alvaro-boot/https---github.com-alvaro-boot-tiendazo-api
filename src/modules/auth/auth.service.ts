@@ -114,11 +114,22 @@ export class AuthService {
       const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
       console.log("👤 Creando entidad de usuario...");
-      const user = this.userRepository.create({
+      const userData = {
         ...registerDto,
         password: hashedPassword,
+      };
+      console.log("📦 Datos del usuario a crear:", {
+        ...userData,
+        password: "***",
+        storeId: registerDto.storeId,
       });
-      console.log("📦 Entidad de usuario creada:", { ...user, password: "***" });
+      
+      const user = this.userRepository.create(userData);
+      console.log("📦 Entidad de usuario creada:", { 
+        ...user, 
+        password: "***",
+        storeId: user.storeId,
+      });
 
       console.log("💾 Guardando usuario en BD...");
       const savedUser = await this.userRepository.save(user);
@@ -130,9 +141,10 @@ export class AuthService {
         storeId: savedUser.storeId,
       });
 
-      // Verificar que realmente se guardó
+      // Verificar que realmente se guardó con relaciones
       const verifiedUser = await this.userRepository.findOne({
         where: { id: savedUser.id },
+        relations: ["store"],
       });
 
       if (!verifiedUser) {
@@ -143,6 +155,8 @@ export class AuthService {
       console.log("✅ Usuario verificado en BD:", {
         id: verifiedUser.id,
         username: verifiedUser.username,
+        storeId: verifiedUser.storeId,
+        store: verifiedUser.store ? { id: verifiedUser.store.id, name: verifiedUser.store.name } : null,
       });
 
       const { password: _, ...result } = savedUser;
@@ -165,6 +179,65 @@ export class AuthService {
 
     const { password: _, ...result } = user;
     return result;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    const users = await this.userRepository.find({
+      relations: ["store"],
+      order: { createdAt: "DESC" },
+    });
+    return users.map((user) => {
+      const { password: _, ...result } = user;
+      return result;
+    });
+  }
+
+  async updateUser(id: number, updateData: Partial<RegisterDto>): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException("User not found");
+    }
+
+    // Preparar datos de actualización
+    const updateDataToApply: any = { ...updateData };
+
+    // Hashear contraseña si se proporciona
+    if (updateData.password) {
+      updateDataToApply.password = await bcrypt.hash(updateData.password, 10);
+    } else {
+      // No actualizar contraseña si no se proporciona
+      delete updateDataToApply.password;
+    }
+
+    // Aplicar cambios
+    Object.assign(user, updateDataToApply);
+    
+    console.log("📝 Actualizando usuario:", {
+      id,
+      updates: {
+        ...updateDataToApply,
+        password: updateDataToApply.password ? "***" : undefined,
+      },
+    });
+
+    const updatedUser = await this.userRepository.save(user);
+    
+    console.log("✅ Usuario actualizado:", {
+      id: updatedUser.id,
+      username: updatedUser.username,
+      storeId: updatedUser.storeId,
+    });
+
+    const { password: _, ...result } = updatedUser;
+    return result;
+  }
+
+  async deleteUser(id: number): Promise<void> {
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException("User not found");
+    }
+    await this.userRepository.remove(user);
   }
 
   // Métodos para gestión de sesiones
