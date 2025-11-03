@@ -73,6 +73,11 @@ export class DebtsService {
       query.andWhere('payment.clientId = :clientId', { clientId: reportDto.clientId });
     }
 
+    // Filtrar por tienda si se proporciona storeId
+    if (reportDto?.storeId) {
+      query.andWhere('client.storeId = :storeId', { storeId: reportDto.storeId });
+    }
+
     return query.getMany();
   }
 
@@ -129,19 +134,32 @@ export class DebtsService {
     };
   }
 
-  async getClientsWithDebt(): Promise<Client[]> {
-    return this.clientRepository
+  async getClientsWithDebt(storeId?: number): Promise<Client[]> {
+    const query = this.clientRepository
       .createQueryBuilder('client')
-      .where('client.debt > :minDebt', { minDebt: 0 })
+      .where('client.debt > :minDebt', { minDebt: 0 });
+
+    // Filtrar por tienda si se proporciona storeId
+    if (storeId) {
+      query.andWhere('client.storeId = :storeId', { storeId });
+    }
+
+    return query
       .orderBy('client.debt', 'DESC')
       .getMany();
   }
 
-  async getTotalDebt(): Promise<{ total: number }> {
-    const result = await this.clientRepository
+  async getTotalDebt(storeId?: number): Promise<{ total: number }> {
+    const query = this.clientRepository
       .createQueryBuilder('client')
-      .select('SUM(client.debt)', 'total')
-      .getRawOne();
+      .select('SUM(client.debt)', 'total');
+
+    // Filtrar por tienda si se proporciona storeId
+    if (storeId) {
+      query.where('client.storeId = :storeId', { storeId });
+    }
+
+    const result = await query.getRawOne();
 
     const total = parseFloat(result?.total) || 0;
     return { total };

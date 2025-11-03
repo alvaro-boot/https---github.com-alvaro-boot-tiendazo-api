@@ -18,4 +18,10 @@ export class DebtReportDto {
   @IsOptional()
   @Type(() => Number)
   clientId?: number;
+
+  @ApiProperty({ example: 1, required: false })
+  @IsNumber()
+  @IsOptional()
+  @Type(() => Number)
+  storeId?: number;
 }

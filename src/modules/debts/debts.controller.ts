@@ -47,20 +47,23 @@ export class DebtsController {
   @ApiQuery({ name: 'startDate', required: false, description: 'Start date (YYYY-MM-DD)' })
   @ApiQuery({ name: 'endDate', required: false, description: 'End date (YYYY-MM-DD)' })
   @ApiQuery({ name: 'clientId', required: false, description: 'Filter by client' })
+  @ApiQuery({ name: 'storeId', required: false, description: 'Filter by store' })
   getDebtReport(@Query() reportDto: DebtReportDto) {
     return this.debtsService.getDebtReport(reportDto);
   }
 
   @Get('clients-with-debt')
   @ApiOperation({ summary: 'Get clients with outstanding debt' })
-  getClientsWithDebt() {
-    return this.debtsService.getClientsWithDebt();
+  @ApiQuery({ name: 'storeId', required: false, description: 'Filter by store' })
+  getClientsWithDebt(@Query('storeId') storeId?: number) {
+    return this.debtsService.getClientsWithDebt(storeId ? Number(storeId) : undefined);
   }
 
   @Get('total-debt')
   @ApiOperation({ summary: 'Get total outstanding debt' })
-  getTotalDebt() {
-    return this.debtsService.getTotalDebt();
+  @ApiQuery({ name: 'storeId', required: false, description: 'Filter by store' })
+  getTotalDebt(@Query('storeId') storeId?: number) {
+    return this.debtsService.getTotalDebt(storeId ? Number(storeId) : undefined);
   }
 
   @Get('payments/:id')
