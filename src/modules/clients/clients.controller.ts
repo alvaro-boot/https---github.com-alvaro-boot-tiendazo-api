@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Query,
+  UnauthorizedException,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -20,7 +21,9 @@ import { ClientsService } from "./clients.service";
 import { CreateClientDto } from "./dto/create-client.dto";
 import { UpdateClientDto } from "./dto/update-client.dto";
 import { SearchClientDto } from "./dto/search-client.dto";
+import { AddDebtDto } from "./dto/add-debt.dto";
 import { JwtAuthGuard } from "../../core/guards/jwt-auth.guard";
+import { AuthUser } from "../../core/decorators/auth-user.decorator";
 
 @ApiTags("Clients")
 @Controller("clients")
@@ -72,6 +75,21 @@ export class ClientsController {
     @Body() body: { amount: number; operation: "add" | "subtract" }
   ) {
     return this.clientsService.updateDebt(id, body.amount, body.operation);
+  }
+
+  @Post(":id/add-debt")
+  @ApiOperation({ summary: "Add debt manually to client (Admin only)" })
+  @ApiParam({ name: "id", type: "number" })
+  addDebtManually(
+    @Param("id") id: number,
+    @Body() addDebtDto: AddDebtDto,
+    @AuthUser() user: any
+  ) {
+    // Verificar que solo los administradores puedan agregar deuda manualmente
+    if (user.role !== "ADMIN") {
+      throw new UnauthorizedException("Only administrators can add debt manually");
+    }
+    return this.clientsService.addDebtManually(id, addDebtDto.amount, addDebtDto.notes);
   }
 
   @Delete(":id")

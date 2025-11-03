@@ -10,8 +10,9 @@ import {
   ParseIntPipe,
   UnauthorizedException,
   Patch,
+  Query,
 } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from "@nestjs/swagger";
 import { AuthService } from "./auth.service";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
@@ -137,11 +138,14 @@ export class AuthController {
   @Get("users")
   @ApiBearerAuth()
   @ApiOperation({ summary: "Get all users (Admin only)" })
-  async getAllUsers(@AuthUser() user: any) {
+  @ApiQuery({ name: "storeId", required: false, description: "Filter by store (defaults to user's store)" })
+  async getAllUsers(@AuthUser() user: any, @Query("storeId") storeId?: number) {
     if (user.role !== "ADMIN") {
       throw new UnauthorizedException("Only admins can access this endpoint");
     }
-    return this.authService.getAllUsers();
+    // Si no se proporciona storeId, usar el storeId del usuario actual
+    const filterStoreId = storeId || user.storeId || user.store?.id;
+    return this.authService.getAllUsers(filterStoreId);
   }
 
   @UseGuards(JwtAuthGuard)

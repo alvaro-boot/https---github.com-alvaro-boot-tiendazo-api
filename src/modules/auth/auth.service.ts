@@ -181,11 +181,18 @@ export class AuthService {
     return result;
   }
 
-  async getAllUsers(): Promise<Omit<User, 'password'>[]> {
-    const users = await this.userRepository.find({
-      relations: ["store"],
-      order: { createdAt: "DESC" },
-    });
+  async getAllUsers(storeId?: number): Promise<Omit<User, 'password'>[]> {
+    const query = this.userRepository
+      .createQueryBuilder("user")
+      .leftJoinAndSelect("user.store", "store")
+      .orderBy("user.createdAt", "DESC");
+
+    // Filtrar por tienda si se proporciona storeId
+    if (storeId) {
+      query.where("user.storeId = :storeId", { storeId });
+    }
+
+    const users = await query.getMany();
     return users.map((user) => {
       const { password: _, ...result } = user;
       return result as Omit<User, 'password'>;

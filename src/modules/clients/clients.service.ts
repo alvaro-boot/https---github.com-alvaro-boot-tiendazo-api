@@ -32,11 +32,12 @@ export class ClientsService {
     // Limpiar email vacío (convertir a undefined o null)
     const cleanedDto = {
       ...createClientDto,
-      email: createClientDto.email && createClientDto.email.trim() !== "" 
-        ? createClientDto.email.trim() 
-        : undefined,
+      email:
+        createClientDto.email && createClientDto.email.trim() !== ""
+          ? createClientDto.email.trim()
+          : undefined,
     };
-    
+
     const client = this.clientRepository.create(cleanedDto);
     return this.clientRepository.save(client);
   }
@@ -91,17 +92,18 @@ export class ClientsService {
 
   async update(id: number, updateClientDto: UpdateClientDto): Promise<Client> {
     const client = await this.findOne(id);
-    
+
     // Limpiar email vacío (convertir a undefined o null)
     const cleanedDto = {
       ...updateClientDto,
-      email: updateClientDto.email !== undefined 
-        ? (updateClientDto.email && updateClientDto.email.trim() !== "" 
-          ? updateClientDto.email.trim() 
-          : undefined)
-        : updateClientDto.email,
+      email:
+        updateClientDto.email !== undefined
+          ? updateClientDto.email && updateClientDto.email.trim() !== ""
+            ? updateClientDto.email.trim()
+            : undefined
+          : updateClientDto.email,
     };
-    
+
     Object.assign(client, cleanedDto);
     return this.clientRepository.save(client);
   }
@@ -121,7 +123,7 @@ export class ClientsService {
     // Convertir valores a número para asegurar precisión
     const currentDebt = parseFloat(String(client.debt || 0));
     const operationAmount = parseFloat(String(amount || 0));
-    
+
     if (operation === "add") {
       client.debt = currentDebt + operationAmount;
     } else {
@@ -134,22 +136,47 @@ export class ClientsService {
     return this.clientRepository.save(client);
   }
 
+  async addDebtManually(
+    id: number,
+    amount: number,
+    notes?: string
+  ): Promise<Client> {
+    const client = await this.findOne(id);
+
+    // Convertir valores a número para asegurar precisión
+    const currentDebt = parseFloat(String(client.debt || 0));
+    const amountToAdd = parseFloat(String(amount || 0));
+
+    // Agregar deuda sin afectar stock
+    const newDebt = parseFloat((currentDebt + amountToAdd).toFixed(2));
+    client.debt = newDebt;
+
+    console.log(
+      `✅ Deuda agregada manualmente al cliente ${id}: ${currentDebt} + ${amountToAdd} = ${newDebt}`
+    );
+    if (notes) {
+      console.log(`📝 Notas: ${notes}`);
+    }
+
+    return this.clientRepository.save(client);
+  }
+
   async getClientsWithDebt(storeId?: number): Promise<Client[]> {
     const query = this.clientRepository
-      .createQueryBuilder('client')
-      .where('client.debt > :minDebt', { minDebt: 0 })
-      .leftJoinAndSelect('client.sales', 'sales')
-      .leftJoinAndSelect('sales.details', 'details')
-      .leftJoinAndSelect('details.product', 'product')
-      .leftJoinAndSelect('client.store', 'store');
+      .createQueryBuilder("client")
+      .where("client.debt > :minDebt", { minDebt: 0 })
+      .leftJoinAndSelect("client.sales", "sales")
+      .leftJoinAndSelect("sales.details", "details")
+      .leftJoinAndSelect("details.product", "product")
+      .leftJoinAndSelect("client.store", "store");
 
     // Filtrar por tienda si se proporciona
     if (storeId) {
-      query.andWhere('client.storeId = :storeId', { storeId });
+      query.andWhere("client.storeId = :storeId", { storeId });
     }
 
-    query.orderBy('client.debt', 'DESC');
-    
+    query.orderBy("client.debt", "DESC");
+
     return query.getMany();
   }
 }

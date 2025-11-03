@@ -264,6 +264,68 @@ export class SalesService {
     const creditSales = sales.filter((sale) => sale.isCredit).length;
     const cashSales = totalCount - creditSales;
 
+    // Calcular productos más vendidos
+    const productSales = new Map<number, { name: string; quantity: number; revenue: number }>();
+    const productCreditSales = new Map<number, { name: string; quantity: number; revenue: number }>();
+    const clientDebts = new Map<number, { name: string; totalDebt: number; saleCount: number }>();
+
+    sales.forEach((sale) => {
+      // Productos más vendidos
+      if (sale.details && sale.details.length > 0) {
+        sale.details.forEach((detail) => {
+          if (detail.product) {
+            const productId = detail.product.id;
+            const productName = detail.product.name;
+            const quantity = detail.quantity || 0;
+            const revenue = parseFloat(String(detail.subtotal || 0));
+
+            if (!productSales.has(productId)) {
+              productSales.set(productId, { name: productName, quantity: 0, revenue: 0 });
+            }
+            const product = productSales.get(productId)!;
+            product.quantity += quantity;
+            product.revenue += revenue;
+
+            // Productos más fiados
+            if (sale.isCredit) {
+              if (!productCreditSales.has(productId)) {
+                productCreditSales.set(productId, { name: productName, quantity: 0, revenue: 0 });
+              }
+              const creditProduct = productCreditSales.get(productId)!;
+              creditProduct.quantity += quantity;
+              creditProduct.revenue += revenue;
+            }
+          }
+        });
+      }
+
+      // Clientes que más fían
+      if (sale.isCredit && sale.client) {
+        const clientId = sale.client.id;
+        const clientName = sale.client.fullName;
+        
+        if (!clientDebts.has(clientId)) {
+          clientDebts.set(clientId, { name: clientName, totalDebt: 0, saleCount: 0 });
+        }
+        const client = clientDebts.get(clientId)!;
+        client.totalDebt += parseFloat(String(sale.total || 0));
+        client.saleCount += 1;
+      }
+    });
+
+    // Ordenar y limitar a top 10
+    const topProducts = Array.from(productSales.values())
+      .sort((a, b) => b.quantity - a.quantity)
+      .slice(0, 10);
+
+    const topCreditProducts = Array.from(productCreditSales.values())
+      .sort((a, b) => b.quantity - a.quantity)
+      .slice(0, 10);
+
+    const topClientsDebt = Array.from(clientDebts.values())
+      .sort((a, b) => b.totalDebt - a.totalDebt)
+      .slice(0, 10);
+
     return {
       period: {
         startDate: reportDto.startDate,
@@ -277,6 +339,9 @@ export class SalesService {
         cashSales,
         averageSale: totalCount > 0 ? totalSales / totalCount : 0,
       },
+      topProducts,
+      topCreditProducts,
+      topClientsDebt,
       sales,
     };
   }
