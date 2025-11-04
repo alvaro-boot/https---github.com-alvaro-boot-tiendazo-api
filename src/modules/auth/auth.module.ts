@@ -7,6 +7,7 @@ import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { User } from "./entities/user.entity";
 import { SessionToken } from "./entities/session-token.entity";
+import { PasswordResetToken } from "./entities/password-reset-token.entity";
 import { JwtStrategy } from "./strategies/jwt.strategy";
 import { LocalStrategy } from "./strategies/local.strategy";
 import { SessionCleanupService } from "./services/session-cleanup.service";
@@ -14,7 +15,7 @@ import { ScheduleModule } from "@nestjs/schedule";
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, SessionToken]),
+    TypeOrmModule.forFeature([User, SessionToken, PasswordResetToken]),
     PassportModule,
     ScheduleModule.forRoot(),
     JwtModule.registerAsync({

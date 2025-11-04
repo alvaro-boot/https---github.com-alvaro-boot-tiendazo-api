@@ -16,6 +16,8 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from "@nestjs/swagger"
 import { AuthService } from "./auth.service";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
+import { ForgotPasswordDto } from "./dto/forgot-password.dto";
+import { ResetPasswordDto } from "./dto/reset-password.dto";
 import { RevokeSessionDto } from "./dto/revoke-session.dto";
 import { SessionStatsDto } from "./dto/session-stats.dto";
 import { LocalAuthGuard } from "./guards/local-auth.guard";
@@ -54,6 +56,22 @@ export class AuthController {
       console.error("❌ Error en el controlador al registrar usuario:", error);
       throw error;
     }
+  }
+
+  @Public()
+  @Post("forgot-password")
+  @ApiOperation({ summary: "Request password reset" })
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto, @Request() req) {
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get("User-Agent");
+    return this.authService.forgotPassword(forgotPasswordDto, ipAddress, userAgent);
+  }
+
+  @Public()
+  @Post("reset-password")
+  @ApiOperation({ summary: "Reset password with token" })
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    return this.authService.resetPassword(resetPasswordDto);
   }
 
   @UseGuards(JwtAuthGuard)

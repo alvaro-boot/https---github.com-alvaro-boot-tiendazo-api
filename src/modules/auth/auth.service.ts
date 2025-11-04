@@ -10,11 +10,15 @@ import { Repository, LessThan, MoreThan, In } from "typeorm";
 import * as bcrypt from "bcryptjs";
 import { User } from "./entities/user.entity";
 import { SessionToken } from "./entities/session-token.entity";
+import { PasswordResetToken } from "./entities/password-reset-token.entity";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
+import { ForgotPasswordDto } from "./dto/forgot-password.dto";
+import { ResetPasswordDto } from "./dto/reset-password.dto";
 import { SessionResponseDto } from "./dto/session-response.dto";
 import { RevokeSessionDto } from "./dto/revoke-session.dto";
 import { SessionStatsDto } from "./dto/session-stats.dto";
+import * as crypto from 'crypto';
 
 @Injectable()
 export class AuthService {
@@ -23,6 +27,8 @@ export class AuthService {
     private userRepository: Repository<User>,
     @InjectRepository(SessionToken)
     private sessionTokenRepository: Repository<SessionToken>,
+    @InjectRepository(PasswordResetToken)
+    private passwordResetTokenRepository: Repository<PasswordResetToken>,
     private jwtService: JwtService
   ) {}
 
@@ -500,6 +506,142 @@ export class AuthService {
       sessionsLast24h,
       sessionsLastWeek,
       expiredSessions,
+    };
+  }
+
+  /**
+   * Solicitar recuperación de contraseña
+   * Genera un token único y lo guarda en la base de datos
+   */
+  async forgotPassword(forgotPasswordDto: ForgotPasswordDto, ipAddress?: string, userAgent?: string) {
+    const { email } = forgotPasswordDto;
+
+    // Buscar usuario por email
+    const user = await this.userRepository.findOne({
+      where: { email, isActive: true },
+    });
+
+    // Por seguridad, siempre devolvemos éxito aunque el usuario no exista
+    // Esto previene que se puedan enumerar usuarios por email
+    if (!user) {
+      console.log(`⚠️ Intento de recuperación de contraseña para email no registrado: ${email}`);
+      return {
+        message: 'Si el email existe en nuestro sistema, recibirás un enlace de recuperación.',
+      };
+    }
+
+    // Generar token único y seguro
+    const resetToken = crypto.randomBytes(32).toString('hex');
+
+    // Crear fecha de expiración (1 hora desde ahora)
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1);
+
+    // Invalidar tokens anteriores no usados del usuario
+    await this.passwordResetTokenRepository.update(
+      {
+        userId: user.id,
+        used: false,
+      },
+      {
+        used: true,
+      }
+    );
+
+    // Crear nuevo token de recuperación
+    const passwordResetToken = this.passwordResetTokenRepository.create({
+      userId: user.id,
+      token: resetToken,
+      expiresAt,
+      used: false,
+      ipAddress: ipAddress || 'unknown',
+      userAgent: userAgent || 'unknown',
+    });
+
+    await this.passwordResetTokenRepository.save(passwordResetToken);
+
+    // En producción, aquí enviarías el email con el enlace
+    // Por ahora, solo lo logueamos
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
+    
+    console.log(`📧 Token de recuperación generado para usuario ${user.id} (${user.email})`);
+    console.log(`🔗 Enlace de recuperación: ${resetUrl}`);
+    
+    // TODO: Implementar envío de email
+    // await this.emailService.sendPasswordResetEmail(user.email, resetUrl);
+
+    return {
+      message: 'Si el email existe en nuestro sistema, recibirás un enlace de recuperación.',
+      // En desarrollo, devolvemos el token (remover en producción)
+      ...(process.env.NODE_ENV === 'development' && { token: resetToken, resetUrl }),
+    };
+  }
+
+  /**
+   * Resetear contraseña con token
+   */
+  async resetPassword(resetPasswordDto: ResetPasswordDto) {
+    const { token, password } = resetPasswordDto;
+
+    // Buscar token válido
+    const resetToken = await this.passwordResetTokenRepository.findOne({
+      where: {
+        token,
+        used: false,
+      },
+      relations: ['user'],
+    });
+
+    if (!resetToken) {
+      throw new UnauthorizedException('Token de recuperación inválido o ya utilizado.');
+    }
+
+    // Verificar que el token no haya expirado
+    if (resetToken.expiresAt < new Date()) {
+      // Marcar como usado para evitar reutilización
+      resetToken.used = true;
+      await this.passwordResetTokenRepository.save(resetToken);
+      throw new UnauthorizedException('El token de recuperación ha expirado. Por favor, solicita uno nuevo.');
+    }
+
+    // Verificar que el usuario existe y está activo
+    const user = await this.userRepository.findOne({
+      where: {
+        id: resetToken.userId,
+        isActive: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado.');
+    }
+
+    // Hashear nueva contraseña
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Actualizar contraseña del usuario
+    user.password = hashedPassword;
+    await this.userRepository.save(user);
+
+    // Marcar token como usado
+    resetToken.used = true;
+    await this.passwordResetTokenRepository.save(resetToken);
+
+    // Invalidar todas las sesiones activas del usuario por seguridad
+    await this.sessionTokenRepository.update(
+      {
+        userId: user.id,
+        isActive: true,
+      },
+      {
+        isActive: false,
+      }
+    );
+
+    console.log(`✅ Contraseña restablecida para usuario ${user.id} (${user.email})`);
+
+    return {
+      message: 'Contraseña restablecida exitosamente. Por favor, inicia sesión con tu nueva contraseña.',
     };
   }
 }
