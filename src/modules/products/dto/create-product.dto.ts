@@ -5,6 +5,7 @@ import {
   IsNumber,
   IsPositive,
   Min,
+  IsBoolean,
 } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 import { Type } from "class-transformer";
@@ -67,4 +68,10 @@ export class CreateProductDto {
   @IsPositive()
   @Type(() => Number)
   storeId: number;
+
+  @ApiProperty({ example: false, required: false })
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
+  isPublic?: boolean;
 }
