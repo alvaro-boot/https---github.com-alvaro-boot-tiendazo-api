@@ -66,7 +66,9 @@ export class ProductsService {
     const savedProduct = await this.productRepository.save(product);
     console.log("✅ Producto guardado exitosamente:", savedProduct);
     
-    return savedProduct as Product;
+    // TypeScript puede inferir que save() devuelve Product[] cuando guarda un solo producto
+    // Hacemos cast a través de unknown para evitar el error de tipos
+    return (Array.isArray(savedProduct) ? savedProduct[0] : savedProduct) as Product;
   }
 
   async findAll(searchDto?: SearchProductDto): Promise<Product[]> {
