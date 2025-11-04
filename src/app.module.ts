@@ -18,6 +18,9 @@ import { ClientsModule } from './modules/clients/clients.module';
 import { DebtsModule } from './modules/debts/debts.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
+import { OrdersModule } from './modules/orders/orders.module';
+import { AccountingModule } from './modules/accounting/accounting.module';
+import { PublicModule } from './modules/public/public.module';
 
 @Module({
   imports: [
@@ -39,6 +42,9 @@ import { UploadsModule } from './modules/uploads/uploads.module';
     DebtsModule,
     ReportsModule,
     UploadsModule,
+    OrdersModule,
+    AccountingModule,
+    PublicModule,
   ],
   controllers: [AppController],
   providers: [AppService],

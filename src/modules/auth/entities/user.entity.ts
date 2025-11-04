@@ -16,6 +16,7 @@ import { Exclude } from 'class-transformer';
 export enum UserRole {
   ADMIN = 'ADMIN',
   EMPLOYEE = 'EMPLOYEE',
+  CLIENT = 'CLIENT', // Cliente del marketplace
 }
 
 @Entity('users')

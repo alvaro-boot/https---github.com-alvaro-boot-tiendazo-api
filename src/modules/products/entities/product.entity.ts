@@ -31,8 +31,35 @@ export class Product extends BaseEntity {
   @Column({ nullable: true })
   image: string;
 
+  @Column({ type: 'simple-array', nullable: true })
+  images: string[]; // Múltiples imágenes para marketplace
+
   @Column({ default: true })
   isActive: boolean;
+
+  @Column({ default: false })
+  isPublic: boolean; // Visible en marketplace (solo para tiendas PUBLIC)
+
+  @Column({ nullable: true })
+  slug: string; // Slug único para URL del producto
+
+  @Column({ default: 0 })
+  views: number; // Contador de vistas en marketplace
+
+  @Column({ default: 0 })
+  salesCount: number; // Contador de ventas online
+
+  @Column({ nullable: true, type: 'text' })
+  metaDescription: string; // Para SEO
+
+  @Column({ nullable: true })
+  metaKeywords: string; // Para SEO
+
+  @Column({ default: true })
+  allowShipping: boolean; // Si permite envío
+
+  @Column({ default: false })
+  isDigital: boolean; // Si es producto digital (no requiere envío)
 
   // Relations
   @Column()

@@ -1,9 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Store } from './entities/store.entity';
+import { Store, StoreType } from './entities/store.entity';
 import { CreateStoreDto } from './dto/create-store.dto';
 import { UpdateStoreDto } from './dto/update-store.dto';
+import { generateUniqueSlug } from '../../shared/utils/slug.util';
 
 @Injectable()
 export class StoresService {
@@ -19,6 +20,20 @@ export class StoresService {
       // Filtrar campos desconocidos como taxRate que no existen en la entidad
       const dto = createStoreDto as any;
       const { taxRate, ...validStoreData } = dto;
+      
+      // Generar slug automáticamente si es tienda pública y no se proporcionó
+      if (validStoreData.type === StoreType.PUBLIC && !validStoreData.slug) {
+        validStoreData.slug = await generateUniqueSlug(
+          validStoreData.name,
+          async (slug: string) => {
+            const exists = await this.storeRepository.findOne({
+              where: { slug },
+            });
+            return !!exists;
+          },
+        );
+        console.log("🔗 Slug generado automáticamente:", validStoreData.slug);
+      }
       
       console.log("📦 Datos válidos después de filtrar:", validStoreData);
       

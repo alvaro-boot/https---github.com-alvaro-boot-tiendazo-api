@@ -7,6 +7,7 @@ import { Store } from "../stores/entities/store.entity";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
 import { SearchProductDto } from "./dto/search-product.dto";
+import { generateUniqueSlug } from "../../shared/utils/slug.util";
 
 @Injectable()
 export class ProductsService {
@@ -44,7 +45,22 @@ export class ProductsService {
       );
     }
 
-    const product = this.productRepository.create(createProductDto);
+    // Generar slug automáticamente si el producto es público y no se proporcionó
+    const productData = { ...createProductDto } as any;
+    if (productData.isPublic && !productData.slug) {
+      productData.slug = await generateUniqueSlug(
+        productData.name,
+        async (slug: string) => {
+          const exists = await this.productRepository.findOne({
+            where: { slug },
+          });
+          return !!exists;
+        },
+      );
+      console.log("🔗 Slug generado automáticamente para producto:", productData.slug);
+    }
+
+    const product = this.productRepository.create(productData);
     console.log("📦 Producto creado (antes de guardar):", product);
     
     const savedProduct = await this.productRepository.save(product);
