@@ -5,7 +5,7 @@ import {
   JoinColumn,
   Index,
 } from 'typeorm';
-import { BaseEntity } from '../../../shared/base.entity';
+import { BaseEntity } from '../../shared/base.entity';
 import { User } from './user.entity';
 
 @Entity('password_reset_tokens')

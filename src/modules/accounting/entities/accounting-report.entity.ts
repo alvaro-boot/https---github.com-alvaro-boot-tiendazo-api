@@ -5,7 +5,7 @@ import {
   JoinColumn,
   Index,
 } from 'typeorm';
-import { BaseEntity } from '../../../shared/base.entity';
+import { BaseEntity } from '../../shared/base.entity';
 import { Store } from '../../stores/entities/store.entity';
 
 export enum ReportPeriod {

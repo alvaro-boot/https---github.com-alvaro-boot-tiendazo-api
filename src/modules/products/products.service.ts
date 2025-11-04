@@ -63,7 +63,7 @@ export class ProductsService {
     const product = this.productRepository.create(productData);
     console.log("📦 Producto creado (antes de guardar):", product);
     
-    const savedProduct = await this.productRepository.save(product);
+    const savedProduct: Product = await this.productRepository.save(product);
     console.log("✅ Producto guardado exitosamente:", savedProduct);
     
     return savedProduct;

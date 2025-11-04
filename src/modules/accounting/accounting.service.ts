@@ -47,17 +47,18 @@ export class AccountingService {
    * Registrar entrada contable automáticamente desde un pedido online
    */
   async registerOrderEntry(order: Order): Promise<AccountingEntry> {
+    const orderWithBase = order as Order & { id: number; createdAt: Date };
     const entry = this.accountingEntryRepository.create({
       storeId: order.storeId,
       type: EntryType.INCOME,
       category: EntryCategory.ONLINE_SALES,
-      date: new Date(order.createdAt),
+      date: new Date(orderWithBase.createdAt),
       description: `Pedido online #${order.orderNumber}`,
       amount: Number(order.total),
       tax: Number(order.tax),
       netAmount: Number(order.subtotal),
       currency: order.currency || 'COP',
-      orderId: order.id,
+      orderId: orderWithBase.id,
       invoiceNumber: order.invoiceNumber,
     });
 

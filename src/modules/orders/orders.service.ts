@@ -142,7 +142,7 @@ export class OrdersService {
         notes: createOrderDto.notes,
       });
 
-      const savedOrder = await queryRunner.manager.save(order);
+      const savedOrder = await queryRunner.manager.save(order) as Order & { id: number };
 
       // Asignar orderId a los items y guardarlos
       for (const item of orderItems) {
@@ -167,7 +167,7 @@ export class OrdersService {
    */
   async findOne(id: number): Promise<Order> {
     const order = await this.orderRepository.findOne({
-      where: { id },
+      where: { id } as any,
       relations: ['store', 'user', 'client', 'items', 'items.product'],
     });
 

@@ -5,7 +5,7 @@ import {
   JoinColumn,
   Index,
 } from 'typeorm';
-import { BaseEntity } from '../../../shared/base.entity';
+import { BaseEntity } from '../../shared/base.entity';
 import { Store } from '../../stores/entities/store.entity';
 import { User } from '../../auth/entities/user.entity';
 import { Sale } from '../../sales/entities/sale.entity';
