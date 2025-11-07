@@ -21,6 +21,7 @@ import { UploadsModule } from './modules/uploads/uploads.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { AccountingModule } from './modules/accounting/accounting.module';
 import { PublicModule } from './modules/public/public.module';
+import { ElectronicInvoiceModule } from './modules/electronic-invoice/electronic-invoice.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { PublicModule } from './modules/public/public.module';
     OrdersModule,
     AccountingModule,
     PublicModule,
+    ElectronicInvoiceModule,
   ],
   controllers: [AppController],
   providers: [AppService],

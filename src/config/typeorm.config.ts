@@ -1,20 +1,20 @@
 import { DataSource } from 'typeorm';
-import { ConfigService } from '@nestjs/config';
 import { config } from 'dotenv';
+import * as path from 'path';
 
+// Cargar variables de entorno
 config();
-
-const configService = new ConfigService();
 
 export default new DataSource({
   type: 'mysql',
-  host: configService.get('DB_HOST'),
-  port: configService.get('DB_PORT'),
-  username: configService.get('DB_USER'),
-  password: configService.get('DB_PASS'),
-  database: configService.get('DB_NAME'),
-  entities: ['src/**/*.entity.ts'],
-  migrations: ['src/migrations/*.ts'],
+  host: process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DB_PORT || '3306', 10),
+  username: process.env.DB_USER || 'root',
+  password: process.env.DB_PASS || '',
+  database: process.env.DB_NAME || 'tiendazo_db',
+  entities: [path.join(__dirname, '../**/*.entity{.ts,.js}')],
+  migrations: [path.join(__dirname, '../migrations/*{.ts,.js}')],
   synchronize: false,
   logging: true,
+  migrationsTableName: 'migrations',
 });

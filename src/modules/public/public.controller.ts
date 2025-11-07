@@ -63,5 +63,19 @@ export class PublicController {
   async getProductBySlug(@Param('slug') slug: string) {
     return this.publicService.getProductBySlug(slug);
   }
+
+  @Get('stores/:slug/render')
+  @ApiOperation({ summary: 'Render store web page with template' })
+  async renderStorePage(@Param('slug') slug: string) {
+    const html = await this.publicService.renderStoreWebPage(slug);
+    // Retornar HTML como texto plano
+    return html;
+  }
+
+  @Get('stores/:slug/theme')
+  @ApiOperation({ summary: 'Get store theme by slug (public)' })
+  async getStoreTheme(@Param('slug') slug: string) {
+    return this.publicService.getStoreTheme(slug);
+  }
 }
 

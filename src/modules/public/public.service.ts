@@ -4,6 +4,8 @@ import { Repository, Like, In } from 'typeorm';
 import { Store, StoreType } from '../stores/entities/store.entity';
 import { Product } from '../products/entities/product.entity';
 import { Category } from '../categories/entities/category.entity';
+import { StoreTheme } from '../stores/entities/store-theme.entity';
+import { StoreThemesService } from '../stores/store-themes.service';
 
 @Injectable()
 export class PublicService {
@@ -14,6 +16,9 @@ export class PublicService {
     private productRepository: Repository<Product>,
     @InjectRepository(Category)
     private categoryRepository: Repository<Category>,
+    @InjectRepository(StoreTheme)
+    private themeRepository: Repository<StoreTheme>,
+    private themesService: StoreThemesService,
   ) {}
 
   /**
@@ -50,10 +55,8 @@ export class PublicService {
       throw new NotFoundException(`Tienda con slug "${slug}" no encontrada`);
     }
 
-    // Incrementar contador de vistas (opcional)
-    // store.views = (store.views || 0) + 1;
-    // await this.storeRepository.save(store);
-
+    // No incluir el tema en la respuesta para evitar problemas de serialización
+    // El frontend puede obtenerlo por separado si lo necesita
     return store;
   }
 
@@ -78,7 +81,8 @@ export class PublicService {
       .leftJoinAndSelect('product.category', 'category')
       .where('product.storeId = :storeId', { storeId: store.id })
       .andWhere('product.isActive = :isActive', { isActive: true })
-      .andWhere('product.isPublic = :isPublic', { isPublic: true });
+      .andWhere('product.isPublic = :isPublic', { isPublic: true })
+      .andWhere('product.deletedAt IS NULL'); // Filtrar productos no eliminados
 
     // Filtro por categoría
     if (filters.category) {
@@ -110,7 +114,8 @@ export class PublicService {
         query.orderBy('product.name', 'DESC');
         break;
       case 'popular':
-        query.orderBy('product.salesCount', 'DESC');
+        // Ordenar por views si salesCount no existe, o por createdAt
+        query.orderBy('product.views', 'DESC');
         break;
       default:
         query.orderBy('product.createdAt', 'DESC');
@@ -179,6 +184,40 @@ export class PublicService {
     await this.productRepository.save(product);
 
     return product;
+  }
+
+  /**
+   * Obtener tema de una tienda por slug (público)
+   */
+  async getStoreTheme(slug: string): Promise<StoreTheme> {
+    const store = await this.getStoreBySlug(slug);
+    return await this.themesService.findOneOrCreate(store.id);
+  }
+
+  /**
+   * Renderiza la página web completa de una tienda usando su plantilla
+   * Usa Factory y Strategy patterns para generar el HTML
+   */
+  async renderStoreWebPage(slug: string): Promise<string> {
+    const store = await this.getStoreBySlug(slug);
+    
+    // Obtener productos de la tienda
+    const productsResponse = await this.getStoreProducts(slug, {
+      page: 1,
+      limit: 50,
+    });
+    
+    // Obtener productos destacados (los primeros 6)
+    const featuredProducts = productsResponse.products.slice(0, 6);
+    
+    // Renderizar usando el servicio de temas
+    const html = await this.themesService.getRenderedHTML(store.id, {
+      products: productsResponse.products,
+      featuredProducts: featuredProducts,
+      storeInfo: store,
+    });
+    
+    return html;
   }
 }
 
