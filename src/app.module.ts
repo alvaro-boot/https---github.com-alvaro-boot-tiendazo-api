@@ -22,12 +22,21 @@ import { OrdersModule } from './modules/orders/orders.module';
 import { AccountingModule } from './modules/accounting/accounting.module';
 import { PublicModule } from './modules/public/public.module';
 import { ElectronicInvoiceModule } from './modules/electronic-invoice/electronic-invoice.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import * as path from 'path';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
+    }),
+    ServeStaticModule.forRoot({
+      rootPath: path.resolve(process.cwd(), "sites"),
+      serveRoot: "/sites",
+      serveStaticOptions: {
+        index: false,
+      },
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],

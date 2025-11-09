@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{store.name}}</title>
+    <meta name="description" content="{{store.description}}" />
+    <link rel="icon" href="{{theme.favicon}}" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="modern-header">
+      <div class="modern-container">
+        <div class="modern-nav">
+          <div class="modern-logo">
+            {{#if store.logo}}
+              <img src="{{store.logo}}" alt="{{store.name}}" class="logo-img" />
+            {{else}}
+              <span class="logo-text">{{store.name}}</span>
+            {{/if}}
+          </div>
+          <nav class="modern-menu">
+            <a href="#productos">Productos</a>
+            {{#if theme.showContact}}
+              <a href="#contacto">Contacto</a>
+            {{/if}}
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <main class="modern-container">
+      <section class="modern-hero">
+        <h1>{{store.name}}</h1>
+        <p class="hero-subtitle">
+          {{store.description}}
+        </p>
+        <a href="#productos" class="modern-cta-btn">Explorar Productos</a>
+      </section>
+
+      {{#if featuredProducts.length}}
+        <section class="featured-section" id="destacados">
+          <div class="section-header">
+            <h2>Productos Destacados</h2>
+            <p class="section-subtitle">Los más populares de nuestra colección</p>
+          </div>
+          <div class="modern-products">
+            {{#each featuredProducts}}
+              <div class="modern-product-card featured-card">
+                {{#if this.image}}
+                  <div class="product-image">
+                    <img src="{{this.image}}" alt="{{this.name}}" />
+                  </div>
+                {{/if}}
+                <div class="product-info">
+                  <h3>{{this.name}}</h3>
+                  <p class="product-price">{{this.formattedPrice}}</p>
+                  <button class="modern-btn">Comprar Ahora</button>
+                </div>
+              </div>
+            {{/each}}
+          </div>
+        </section>
+      {{/if}}
+
+      <section class="products-section" id="productos">
+        <div class="section-header">
+          <h2>Nuestros Productos</h2>
+          <p class="section-subtitle">Explora nuestra selección completa</p>
+        </div>
+        {{#if products.length}}
+          <div class="modern-products">
+            {{#each products}}
+              <div class="modern-product-card">
+                {{#if this.image}}
+                  <div class="product-image">
+                    <img src="{{this.image}}" alt="{{this.name}}" />
+                  </div>
+                {{else}}
+                  <div class="product-placeholder">Sin imagen</div>
+                {{/if}}
+                <div class="product-info">
+                  <h3>{{this.name}}</h3>
+                  {{#if this.shortDescription}}
+                    <p class="product-description">{{this.shortDescription}}</p>
+                  {{/if}}
+                  <div class="product-footer">
+                    <p class="product-price">{{this.formattedPrice}}</p>
+                    <button class="modern-btn">Agregar al Carrito</button>
+                  </div>
+                </div>
+              </div>
+            {{/each}}
+          </div>
+        {{else}}
+          <div class="empty-state">
+            <p>Próximamente tendremos productos disponibles.</p>
+          </div>
+        {{/if}}
+      </section>
+
+      {{#if theme.showContact}}
+        <section class="contact-section" id="contacto">
+          <div class="section-header">
+            <h2>Contáctanos</h2>
+            <p class="section-subtitle">Estamos aquí para ayudarte</p>
+          </div>
+          <div class="contact-grid">
+            {{#if store.address}}
+              <div class="contact-item">
+                <div class="contact-icon">📍</div>
+                <h3>Dirección</h3>
+                <p>{{store.address}}</p>
+              </div>
+            {{/if}}
+            {{#if store.phone}}
+              <div class="contact-item">
+                <div class="contact-icon">📞</div>
+                <h3>Teléfono</h3>
+                <p><a href="tel:{{store.phone}}">{{store.phone}}</a></p>
+              </div>
+            {{/if}}
+            {{#if store.email}}
+              <div class="contact-item">
+                <div class="contact-icon">✉️</div>
+                <h3>Email</h3>
+                <p><a href="mailto:{{store.email}}">{{store.email}}</a></p>
+              </div>
+            {{/if}}
+          </div>
+        </section>
+      {{/if}}
+    </main>
+
+    <footer class="modern-footer">
+      <div class="footer-content">
+        <p>&copy; {{currentYear}} {{store.name}}. Todos los derechos reservados.</p>
+      </div>
+    </footer>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
+

@@ -15,10 +15,22 @@ export class AddGeneratedMarkupToStoreThemes1730630000000
         type: "longtext",
         isNullable: true,
       }),
+      new TableColumn({
+        name: "sitePath",
+        type: "varchar",
+        length: "500",
+        isNullable: true,
+      }),
+      new TableColumn({
+        name: "indexPath",
+        type: "varchar",
+        length: "500",
+        isNullable: true,
+      }),
     ]);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.dropColumns("store_themes", ["generatedCss", "generatedHtml"]);
+    await queryRunner.dropColumns("store_themes", ["indexPath", "sitePath", "generatedCss", "generatedHtml"]);
   }
 }

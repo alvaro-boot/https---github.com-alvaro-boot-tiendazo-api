@@ -93,6 +93,12 @@ export class StoreTheme extends BaseEntity {
   @Column({ nullable: true, type: "longtext" })
   generatedCss: string; // CSS generado y persistido para la tienda
 
+  @Column({ nullable: true })
+  sitePath: string; // Ruta donde se guardan los archivos físicos
+
+  @Column({ nullable: true })
+  indexPath: string; // Ruta absoluta del index.html generado
+
   // Configuración de marketing
   @Column({ nullable: true })
   googleAnalyticsId: string; // ID de Google Analytics

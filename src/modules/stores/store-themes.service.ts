@@ -1,12 +1,15 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
+import { promises as fs } from "fs";
+import * as path from "path";
 import { StoreTheme, StoreTemplate } from "./entities/store-theme.entity";
 import { Store } from "./entities/store.entity";
 import { CreateStoreThemeDto } from "./dto/create-store-theme.dto";
 import { UpdateStoreThemeDto } from "./dto/update-store-theme.dto";
-import { TemplateFactory } from "./templates/template-factory";
 import { TemplateRenderData, TemplateRenderResult } from "./templates/base-template";
+import { SiteGeneratorService } from "./site-generator.service";
+import { TemplateFactory } from "./templates/template-factory";
 
 @Injectable()
 export class StoreThemesService {
@@ -15,7 +18,10 @@ export class StoreThemesService {
     private themeRepository: Repository<StoreTheme>,
     @InjectRepository(Store)
     private storeRepository: Repository<Store>,
+    private siteGenerator: SiteGeneratorService,
   ) {}
+
+  private readonly logger = new Logger(StoreThemesService.name);
 
   private async renderAndPersistMarkup(
     storeId: number,
@@ -28,23 +34,29 @@ export class StoreThemesService {
 
     const theme = await this.findOneOrCreate(storeId);
     const template = TemplateFactory.getTemplate(theme.template);
-    const result = template.render(store, theme, renderData);
+    const renderResult = template.render(store, theme, renderData);
 
-    theme.generatedHtml = result.html;
-    theme.generatedCss = result.css;
+    const siteInfo = await this.siteGenerator.generateSiteFromRenderResult({
+      store,
+      theme,
+      renderResult,
+    });
+
+    theme.generatedHtml = null;
+    theme.generatedCss = null;
+    theme.sitePath = siteInfo.sitePath;
+    theme.indexPath = siteInfo.indexPath;
     await this.themeRepository.save(theme);
 
-    return result;
+    return renderResult;
   }
 
   async create(storeId: number, createThemeDto: CreateStoreThemeDto): Promise<StoreTheme> {
-    // Verificar que la tienda existe
     const store = await this.storeRepository.findOne({ where: { id: storeId } });
     if (!store) {
       throw new NotFoundException(`Store with ID ${storeId} not found`);
     }
 
-    // Verificar si ya existe un tema para esta tienda
     const existingTheme = await this.themeRepository.findOne({
       where: { storeId },
     });
@@ -53,7 +65,6 @@ export class StoreThemesService {
       throw new Error("Theme already exists for this store. Use update instead.");
     }
 
-    // Crear tema con valores por defecto
     const theme = this.themeRepository.create({
       storeId,
       template: createThemeDto.template || StoreTemplate.MODERN,
@@ -83,6 +94,7 @@ export class StoreThemesService {
     });
 
     const savedTheme = await this.themeRepository.save(theme);
+    await this.renderAndPersistMarkup(storeId, {});
 
     return savedTheme;
   }
@@ -98,7 +110,6 @@ export class StoreThemesService {
     let theme = await this.findOne(storeId);
 
     if (!theme) {
-      // Crear tema por defecto si no existe
       theme = await this.create(storeId, {});
     }
 
@@ -112,16 +123,11 @@ export class StoreThemesService {
     const theme = await this.findOne(storeId);
 
     if (!theme) {
-      // Crear tema si no existe
       const created = await this.create(storeId, updateThemeDto as CreateStoreThemeDto);
-      // Limpiar el HTML generado para forzar una regeneración con los datos más recientes
-      created.generatedHtml = null;
-      created.generatedCss = null;
-      await this.themeRepository.save(created);
+      await this.renderAndPersistMarkup(storeId, {});
       return created;
     }
 
-    // Actualizar campos
     if (updateThemeDto.template !== undefined) {
       theme.template = updateThemeDto.template;
     }
@@ -175,7 +181,7 @@ export class StoreThemesService {
     }
     if (updateThemeDto.customDomain !== undefined) {
       theme.customDomain = updateThemeDto.customDomain;
-      theme.domainVerified = false; // Reiniciar verificación al cambiar dominio
+      theme.domainVerified = false;
     }
     if (updateThemeDto.subdomain !== undefined) {
       theme.subdomain = updateThemeDto.subdomain;
@@ -190,10 +196,13 @@ export class StoreThemesService {
       theme.mailchimpListId = updateThemeDto.mailchimpListId;
     }
 
-    theme.generatedHtml = null;
-    theme.generatedCss = null;
+    theme.sitePath = null;
+    theme.indexPath = null;
 
-    return await this.themeRepository.save(theme);
+    const savedTheme = await this.themeRepository.save(theme);
+    await this.renderAndPersistMarkup(storeId, {});
+
+    return savedTheme;
   }
 
   async verifyDomain(storeId: number): Promise<boolean> {
@@ -202,8 +211,6 @@ export class StoreThemesService {
       return false;
     }
 
-    // TODO: Implementar verificación de dominio via DNS
-    // Por ahora, marcamos como verificado si tiene dominio configurado
     theme.domainVerified = true;
     await this.themeRepository.save(theme);
 
@@ -217,42 +224,41 @@ export class StoreThemesService {
     }
   }
 
-  /**
-   * Renderiza la página web de la tienda usando la plantilla configurada.
-   * Además, persiste el resultado para futuras consultas.
-   */
   async renderStorePage(
     storeId: number,
     renderData: TemplateRenderData,
   ): Promise<TemplateRenderResult> {
-    return this.renderAndPersistMarkup(storeId, renderData);
+    const result = await this.renderAndPersistMarkup(storeId, renderData);
+    return result;
   }
 
-  /**
-   * Obtiene el HTML renderizado persistido. Si no existe, se regenera.
-   * Cuando se proporcionan datos, se usa para regenerar el archivo.
-   */
   async getRenderedHTML(
     storeId: number,
     renderData: TemplateRenderData = {},
   ): Promise<string> {
     const theme = await this.findOneOrCreate(storeId);
-    const hasStoredMarkup = Boolean(theme.generatedHtml);
+    const hasSite = Boolean(theme.indexPath);
     const hasData = renderData && Object.keys(renderData).length > 0;
 
-    if (!hasStoredMarkup || hasData) {
+    if (!hasSite || hasData) {
       const result = await this.renderAndPersistMarkup(storeId, renderData);
       return result.html;
     }
 
-    return theme.generatedHtml as string;
+    try {
+      return await fs.readFile(theme.indexPath as string, "utf-8");
+    } catch (error) {
+      this.logger.error("Unable to read generated site", error as Error);
+      const result = await this.renderAndPersistMarkup(storeId, renderData);
+      return result.html;
+    }
   }
 
   async getStoredAssets(storeId: number): Promise<{ html: string | null; css: string | null }> {
     const theme = await this.findOneOrCreate(storeId);
     return {
-      html: theme.generatedHtml,
-      css: theme.generatedCss,
+      html: theme.indexPath,
+      css: theme.sitePath ? path.join(theme.sitePath, "styles.css") : null,
     };
   }
 }
