@@ -200,24 +200,27 @@ export class PublicService {
    */
   async renderStoreWebPage(slug: string): Promise<string> {
     const store = await this.getStoreBySlug(slug);
+    const theme = await this.themesService.findOneOrCreate(store.id);
+
+    if (theme.generatedHtml) {
+      return theme.generatedHtml;
+    }
     
-    // Obtener productos de la tienda
+    // Obtener productos de la tienda para la primera generación
     const productsResponse = await this.getStoreProducts(slug, {
       page: 1,
       limit: 50,
     });
     
-    // Obtener productos destacados (los primeros 6)
     const featuredProducts = productsResponse.products.slice(0, 6);
     
-    // Renderizar usando el servicio de temas
-    const html = await this.themesService.getRenderedHTML(store.id, {
+    const result = await this.themesService.renderStorePage(store.id, {
       products: productsResponse.products,
-      featuredProducts: featuredProducts,
+      featuredProducts,
       storeInfo: store,
     });
     
-    return html;
+    return result.html;
   }
 }
 

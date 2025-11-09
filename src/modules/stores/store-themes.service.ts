@@ -17,6 +17,26 @@ export class StoreThemesService {
     private storeRepository: Repository<Store>,
   ) {}
 
+  private async renderAndPersistMarkup(
+    storeId: number,
+    renderData: TemplateRenderData = {},
+  ): Promise<TemplateRenderResult> {
+    const store = await this.storeRepository.findOne({ where: { id: storeId } });
+    if (!store) {
+      throw new NotFoundException(`Store with ID ${storeId} not found`);
+    }
+
+    const theme = await this.findOneOrCreate(storeId);
+    const template = TemplateFactory.getTemplate(theme.template);
+    const result = template.render(store, theme, renderData);
+
+    theme.generatedHtml = result.html;
+    theme.generatedCss = result.css;
+    await this.themeRepository.save(theme);
+
+    return result;
+  }
+
   async create(storeId: number, createThemeDto: CreateStoreThemeDto): Promise<StoreTheme> {
     // Verificar que la tienda existe
     const store = await this.storeRepository.findOne({ where: { id: storeId } });
@@ -62,7 +82,9 @@ export class StoreThemesService {
       mailchimpListId: createThemeDto.mailchimpListId,
     });
 
-    return await this.themeRepository.save(theme);
+    const savedTheme = await this.themeRepository.save(theme);
+
+    return savedTheme;
   }
 
   async findOne(storeId: number): Promise<StoreTheme | null> {
@@ -91,7 +113,12 @@ export class StoreThemesService {
 
     if (!theme) {
       // Crear tema si no existe
-      return await this.create(storeId, updateThemeDto as CreateStoreThemeDto);
+      const created = await this.create(storeId, updateThemeDto as CreateStoreThemeDto);
+      // Limpiar el HTML generado para forzar una regeneración con los datos más recientes
+      created.generatedHtml = null;
+      created.generatedCss = null;
+      await this.themeRepository.save(created);
+      return created;
     }
 
     // Actualizar campos
@@ -163,6 +190,9 @@ export class StoreThemesService {
       theme.mailchimpListId = updateThemeDto.mailchimpListId;
     }
 
+    theme.generatedHtml = null;
+    theme.generatedCss = null;
+
     return await this.themeRepository.save(theme);
   }
 
@@ -188,39 +218,42 @@ export class StoreThemesService {
   }
 
   /**
-   * Renderiza la página web de la tienda usando la plantilla configurada
-   * Usa Factory Pattern para obtener la plantilla y Strategy Pattern para renderizar
+   * Renderiza la página web de la tienda usando la plantilla configurada.
+   * Además, persiste el resultado para futuras consultas.
    */
   async renderStorePage(
     storeId: number,
     renderData: TemplateRenderData,
   ): Promise<TemplateRenderResult> {
-    // Obtener la tienda y su tema
-    const store = await this.storeRepository.findOne({ where: { id: storeId } });
-    if (!store) {
-      throw new NotFoundException(`Store with ID ${storeId} not found`);
-    }
-
-    const theme = await this.findOneOrCreate(storeId);
-
-    // Usar Factory Pattern para obtener la plantilla correcta
-    const template = TemplateFactory.getTemplate(theme.template);
-
-    // Usar Strategy Pattern para renderizar con la plantilla seleccionada
-    const result = template.render(store, theme, renderData);
-
-    return result;
+    return this.renderAndPersistMarkup(storeId, renderData);
   }
 
   /**
-   * Obtiene el HTML renderizado de la página de la tienda
+   * Obtiene el HTML renderizado persistido. Si no existe, se regenera.
+   * Cuando se proporcionan datos, se usa para regenerar el archivo.
    */
   async getRenderedHTML(
     storeId: number,
-    renderData: TemplateRenderData,
+    renderData: TemplateRenderData = {},
   ): Promise<string> {
-    const result = await this.renderStorePage(storeId, renderData);
-    return result.html;
+    const theme = await this.findOneOrCreate(storeId);
+    const hasStoredMarkup = Boolean(theme.generatedHtml);
+    const hasData = renderData && Object.keys(renderData).length > 0;
+
+    if (!hasStoredMarkup || hasData) {
+      const result = await this.renderAndPersistMarkup(storeId, renderData);
+      return result.html;
+    }
+
+    return theme.generatedHtml as string;
+  }
+
+  async getStoredAssets(storeId: number): Promise<{ html: string | null; css: string | null }> {
+    const theme = await this.findOneOrCreate(storeId);
+    return {
+      html: theme.generatedHtml,
+      css: theme.generatedCss,
+    };
   }
 }
 

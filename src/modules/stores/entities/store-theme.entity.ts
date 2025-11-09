@@ -87,6 +87,12 @@ export class StoreTheme extends BaseEntity {
   @Column({ nullable: true, type: "text" })
   domainConfig: string; // JSON con configuración de DNS (CNAME, etc.)
 
+  @Column({ nullable: true, type: "longtext" })
+  generatedHtml: string; // HTML generado y persistido para la tienda
+
+  @Column({ nullable: true, type: "longtext" })
+  generatedCss: string; // CSS generado y persistido para la tienda
+
   // Configuración de marketing
   @Column({ nullable: true })
   googleAnalyticsId: string; // ID de Google Analytics
