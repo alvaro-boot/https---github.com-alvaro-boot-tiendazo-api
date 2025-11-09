@@ -1,4 +1,4 @@
-# 🚀 Guía completa de implementación de la API Tiendazo en Frontend
+# 🚀 Guía completa de implementación de la API Prisma Commerce en Frontend
 
 ## 📋 Información de la API
 

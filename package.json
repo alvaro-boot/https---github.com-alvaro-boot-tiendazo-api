@@ -1,7 +1,7 @@
 {
   "name": "tiendazo-backend",
   "version": "1.0.0",
-  "description": "Backend para Tiendazo - Gestión de tiendas, productos, inventario, ventas y reportes",
+  "description": "Backend para Prisma Commerce - Gestión de tiendas, productos, inventario, ventas y reportes",
   "author": "",
   "private": true,
   "license": "MIT",

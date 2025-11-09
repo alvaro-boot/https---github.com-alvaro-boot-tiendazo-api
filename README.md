@@ -1,4 +1,4 @@
-# 🛒 Tiendazo - Backend API
+# 🛍️ Prisma Commerce - Backend API
 
 Backend completo para gestión de tiendas desarrollado con NestJS, TypeORM y MySQL.
 
@@ -25,17 +25,20 @@ Backend completo para gestión de tiendas desarrollado con NestJS, TypeORM y MyS
 ## 🔧 Instalación
 
 1. Clona el repositorio
+
 ```bash
 git clone <repository-url>
 cd tiendazo-backend
 ```
 
 2. Instala las dependencias
+
 ```bash
 npm install
 ```
 
 3. Configura las variables de entorno
+
 ```bash
 cp .env.example .env
 ```
@@ -60,11 +63,13 @@ NODE_ENV=development
 ```
 
 4. Crea la base de datos
+
 ```sql
 CREATE DATABASE tiendazo_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
 5. Ejecuta la aplicación
+
 ```bash
 # Desarrollo
 npm run start:dev
@@ -79,6 +84,7 @@ La aplicación estará disponible en `http://localhost:3000/api`
 ## 📚 Documentación API
 
 La documentación interactiva está disponible en:
+
 - Swagger UI: `http://localhost:3000/api/docs`
 
 ## 🏗️ Estructura del Proyecto
@@ -113,23 +119,27 @@ Authorization: Bearer <token>
 ```
 
 ### Roles Disponibles
+
 - `ADMIN`: Acceso completo
 - `EMPLOYEE`: Acceso limitado
 
 ## 📝 Endpoints Principales
 
 ### Autenticación
+
 - `POST /api/auth/register` - Registrar usuario
 - `POST /api/auth/login` - Iniciar sesión
 - `GET /api/auth/profile` - Perfil del usuario autenticado
 
 ### Tiendas
+
 - `GET /api/stores` - Listar todas las tiendas
 - `POST /api/stores` - Crear tienda (ADMIN)
 - `GET /api/stores/:id` - Obtener tienda
 - `PATCH /api/stores/:id` - Actualizar tienda (ADMIN)
 
 ### Productos
+
 - `GET /api/products` - Listar productos
 - `POST /api/products` - Crear producto
 - `GET /api/products/:id` - Obtener producto

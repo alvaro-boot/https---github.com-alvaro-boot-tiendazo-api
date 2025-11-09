@@ -36,9 +36,9 @@ async function bootstrap() {
 
   // Swagger
   const config = new DocumentBuilder()
-    .setTitle("Tiendazo API")
+    .setTitle("Prisma Commerce API")
     .setDescription(
-      "API para gestión de tiendas - Productos, Inventario, Ventas, Fiados y Reportes"
+      "API para la plataforma Prisma Commerce: tiendas, productos, inventario, ventas, facturación y reportes"
     )
     .setVersion("1.0")
     .addBearerAuth()
